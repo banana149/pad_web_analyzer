@@ -1,0 +1,3511 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <style>
+        .collapsible-flow-panel {
+        background-color: #ffffff;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        /* 左側の太い青線 */
+        border-left: 4px solid #007bff; 
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        overflow: hidden; /* 角丸を維持するため */
+        margin-bottom: 15px;
+        }
+
+        /* ヘッダー部分 (クリック領域) */
+        .collapsible-flow-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            /* background-color: #fcfcfc; */ /* ← 元のは消すかコメントアウト */
+            background: linear-gradient(135deg, #e3f2fd, #bbdefb); /* ★これを追加 */
+            color: #0d47a1; /* ★これを追加 */
+            font-weight: 600; /* ★ここに追加 (panel-titleから移動) */
+            cursor: pointer; 
+            transition: background-color 0.2s ease;
+            /* border-radius は親の panel にあるので、ここでは不要かも？ */
+        }
+
+        .collapsible-flow-header:hover {
+            background-color: #f0f6ff; /* ホバー時に少し色を変える */
+        }
+
+        .collapsible-flow-header .header-left {
+        display: flex;
+        align-items: center;
+        gap: 8px; /* アイコンとタイトルの隙間 */
+        }
+
+        .collapsible-flow-header .panel-title {
+        font-weight: 600;
+        font-size: 16px;
+        color: #333;
+        }
+
+        .collapsible-flow-header .header-icon {
+            font-size: 1.2em; /* アイコンを少し大きく */
+        }
+
+        /* 右上のバッジ（開閉状態） */
+        .collapsible-flow-header .toggle-badge {
+        background-color: #6c757d; /* グレー */
+        color: white;
+        font-size: 12px;
+        font-weight: 500;
+        padding: 4px 10px;
+        border-radius: 12px; /* 楕円形 */
+        transition: background-color 0.2s ease;
+        }
+
+        /* 開いた状態のバッジ色 */
+        .collapsible-flow-header.active .toggle-badge {
+            background-color: #007bff; /* 青 */
+        }
+
+        /* 折りたたまれるコンテンツ */
+        .collapsible-flow-content {
+        padding: 15px;
+        /* デフォルトで非表示 */
+        display: none; 
+        border-top: 1px solid #e0e0e0; /* ヘッダーとの境界線 */
+        background-color: #fff;
+        }
+
+        /* フローチャートのh4タグ用スタイル */
+        .collapsible-flow-content h4 {
+            color: #323130;
+            border-left: 4px solid #0078d4;
+            padding-left: 10px;
+            margin-top: 0; /* パネル直下なので上マージンをリセット */
+        }
+
+        .desktop-flow-panel {
+        background-color: #ffffff;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        /* 左側の太い青線（画像に合わせる） */
+        border-left: 4px solid #007bff; 
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        overflow: hidden; /* 角丸を維持するため */
+        margin-bottom: 15px; /* workflow-item の代わり */
+        }
+
+        /* ヘッダー部分 (クリック領域) */
+        .desktop-flow-header {
+            background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+            color: #0d47a1;
+            font-weight: 600;
+            /* ▼ ここから下を追加 ▼ */
+    
+            display: flex;            /* 中身を横並び（Flexbox）にする */
+            justify-content: space-between; /* 両端に寄せる */
+            align-items: center;      /* 上下中央に揃える */
+            
+            /* 見た目の調整（お好みで） */
+            padding: 12px 16px;       /* 内側の余白 */
+            border-radius: 8px;       /* 角を丸くする */
+        }
+
+        .desktop-flow-header:hover {
+            background-color: #f0f6ff; /* ホバー時に少し色を変える */
+        }
+
+        .desktop-flow-header .header-left {
+        display: flex;
+        align-items: center;
+        gap: 8px; /* アイコンとタイトルの隙間 */
+        }
+
+        .desktop-flow-header .panel-title {
+        font-weight: 600;
+        font-size: 16px;
+        color: #333;
+        }
+
+        .desktop-flow-header .header-icon {
+            font-size: 1.2em; /* アイコンを少し大きく */
+        }
+
+        /* 右上のバッジ（開閉状態） */
+        .desktop-flow-header .toggle-badge {
+        background-color: #6c757d; /* グレー */
+        color: white;
+        font-size: 12px;
+        font-weight: 500;
+        padding: 4px 10px;
+        border-radius: 12px; /* 楕円形 */
+        transition: background-color 0.2s ease;
+        }
+
+        /* 開いた状態のバッジ色 */
+        .desktop-flow-header.active .toggle-badge {
+            background-color: #007bff; /* 青 */
+        }
+
+        /* 折りたたまれるコンテンツ（generateDesktopFlowChartの結果） */
+        .desktop-flow-content {
+        padding: 15px;
+        /* デフォルトで非表示 */
+        display: none; 
+        border-top: 1px solid #e0e0e0; /* ヘッダーとの境界線 */
+        background-color: #fff;
+        }
+
+        /* generateDesktopFlowChartがh4タグを生成しているので、それ用のスタイル */
+        .desktop-flow-content h4 {
+            color: #323130;
+            border-left: 4px solid #0078d4;
+            padding-left: 10px;
+            margin-top: 0; /* パネル直下なので上マージンをリセット */
+        }
+
+        /* 点線で半透明のグループボックス */
+        .dotted-group-box {
+            position: relative; /* ★修正：メッセージを配置する基準点にする */
+            border: 2px dashed #FF0000; /* テーマカラーに合わせた点線 */
+            background-color: rgba(255, 0, 0, 0.05); /* テーマカラーの半透明背景 (5%の不透明度) */
+            border-radius: 8px; /* 角を丸くする */
+            padding: 25px 15px 15px 15px;  /* ★修正：メッセージ分の余白を上に確保 */
+            margin: 10px 0;    /* 上下の余白 */
+            text-align: left;    /* 中の要素を左揃えにする */
+            margin-bottom: 25px;
+        }
+
+        /* ★追加：グループボックス右上のメッセージのスタイル */
+        .group-box-message {
+            position: absolute; /* 親要素を基準に絶対位置を指定 */
+            top: -10px;         /* 枠線の上端から-10pxの位置に配置 */
+            right: 10px;        /* 右端から10pxの位置に配置 */
+            background-color: #FF0000; /* 背景色 */
+            color: white;           /* 文字色 */
+            padding: 3px 8px;       /* 内側の余白 */
+            border-radius: 4px;     /* 角を丸くする */
+            font-size: 12px;        /* 文字サイズ */
+            font-weight: bold;      /* 太字 */
+        }
+
+        .region-group-box {
+            position: relative;
+            border: 2px dashed #FFC300; /* ★変更：濃い黄色の点線 */
+            background-color: rgba(255, 195, 0, 0.05); /* ★変更：濃い黄色の半透明背景 */
+            border-radius: 8px;
+            padding: 25px 15px 15px 15px;
+            margin: 10px 0;
+            text-align: left;
+            margin-bottom: 25px;
+        }
+
+        .region-box-message {
+            position: absolute;
+            top: -10px;
+            right: 10px;
+            background-color: #FFC300; /* ★変更：濃い黄色の背景色 */
+            color: black;           /* ★変更：背景色に合わせて文字色を黒に */
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .Subflow-group-box {
+            position: relative; /* ★修正：メッセージを配置する基準点にする */
+            border: 2px solid #FF0000; /* テーマカラーに合わせた点線 */
+            border-radius: 8px; /* 角を丸くする */
+            padding: 25px 15px 15px 15px;  /* ★修正：メッセージ分の余白を上に確保 */
+            margin: 10px 0;    /* 上下の余白 */
+            text-align: left;    /* 中の要素を左揃えにする */
+            margin-bottom: 25px;
+        }
+
+        /* ★追加：グループボックス右上のメッセージのスタイル */
+        .group-box-message2 {
+            position: absolute; /* 親要素を基準に絶対位置を指定 */
+            top: -10px;         /* 枠線の上端から-10pxの位置に配置 */
+            right: 10px;        /* 右端から10pxの位置に配置 */
+            background-color: #FF0000; /* 背景色 */
+            color: white;           /* 文字色 */
+            padding: 3px 8px;       /* 内側の余白 */
+            border-radius: 4px;     /* 角を丸くする */
+            font-size: 12px;        /* 文字サイズ */
+            font-weight: bold;      /* 太字 */
+        }
+        
+        .if-box {
+        /* 親要素を位置指定の基準にする */
+            position: relative; /* ★修正：メッセージを配置する基準点にする */
+            border: 2px dashed #0000FF; /* 青色の点線 */
+            background-color: rgba(0, 0, 255, 0.05); /* 青色の半透明背景 (5%の不透明度) */
+            border-radius: 8px; /* 角を丸くする */
+            padding: 25px 15px 15px 15px;  /* ★修正：メッセージ分の余白を上に確保 */
+            margin: 10px 0;    /* 上下の余白 */
+            text-align: left;    /* 中の要素を左揃えにする */
+            margin-bottom: 25px;
+        }
+        
+            /* True/Falseの分岐をまとめるコンテナ */
+        .branches {
+            display: flex;
+            margin-top: 20px;
+            gap: 15px;
+        }
+
+        /* TrueとFalseの箱の共通スタイル */
+        .branch {
+            position: relative;
+            flex: 1;
+            border: 1px dashed #999;
+            border-radius: 5px;
+            padding: 15px;
+            padding-top: 25px;
+            background-color: #fff;
+        }
+
+        /* True/Falseのラベルの共通スタイル */
+        .branch::before {
+            position: absolute;
+            top: -10px;
+            left: 10px;
+            padding: 2px 8px;
+            font-size: 12px;
+            font-weight: bold;
+            border-radius: 5px;
+            color: #fff;
+        }
+
+        /* Trueボックスのラベル */
+        .true-branch::before {
+            content: 'True';
+            background-color: #28a745; /* 緑 */
+        }
+
+        /* Falseボックスのラベル */
+        .false-branch::before {
+            content: 'False';
+            background-color: #dc3545; /* 赤 */
+        }
+
+        .elseiF-branch::before {
+            content: 'ElseIf';
+            background-color: #dc3545; /* 赤 */
+        }
+
+        
+
+        /* 文字列を追加・編集できるようにする crucial part */
+        .editable-content {
+            min-height: 50px;
+            outline: none; /* 編集時に表示される枠線を消す */
+        }
+
+        /* 子要素：「if」という文字 */
+        .if-box::before {
+            /* "if"という文字を生成 */
+            content: 'if'; 
+            /* 親要素を基準に、絶対位置で指定 */
+            position: absolute; 
+
+            /* 位置の指定：右上の角から配置 */
+            top: -12px;  /* 上に12px移動（枠線と重なるように調整） */
+            right: 15px; /* 右から15pxの位置に配置 */
+            
+            
+            /* 装飾 */
+            background-color: #0000FF;; /* 背景を白にして枠線を隠す */
+            padding: 0 8px;         /* 文字の左右に少し余白を持たせる */
+            color: #fff;             /* 文字色を少しグレーに */
+            font-weight: bold;    /* 太字にする */
+            font-size: 14px;      /* 文字サイズ */
+        }
+
+        .branch-container {
+            border-left: 2px dotted #ffc107;
+            padding-left: 20px;
+            margin-left: 10px;
+        }
+
+        .path-label {
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            display: inline-block;
+            margin-bottom: 5px;
+        }
+
+        /* シンプルで分かりやすいスタイル設定 */
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: #0078d4;
+            text-align: center;
+            border-bottom: 2px solid #0078d4;
+            padding-bottom: 10px;
+        }
+
+        h2 {
+            color: #323130;
+            border-left: 4px solid #0078d4;
+            padding-left: 10px;
+        }
+
+        /* ファイル選択エリアのスタイル */
+        .file-input-area {
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            background-color: #fafafa;
+            margin-bottom: 20px;
+        }
+
+        .file-input-area:hover {
+            border-color: #0078d4;
+            background-color: #f0f8ff;
+        }
+
+        input[type="file"] {
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            width: 300px;
+        }
+
+        button {
+            background-color: #0078d4;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+
+        button:hover {
+            background-color: #106ebe;
+        }
+
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        /* ローディング表示 */
+        .loading {
+            display: none;
+            text-align: center;
+            color: #0078d4;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        /* 結果表示エリア */
+        .results {
+            margin-top: 20px;
+        }
+
+        .workflow-item {
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            background-color: #fafafa;
+        }
+
+        .workflow-header {
+            background-color: #e6f3ff;
+            padding: 10px 15px;
+            border-bottom: 1px solid #ddd;
+            font-weight: bold;
+        }
+
+        .workflow-content {
+            padding: 15px;
+        }
+
+        /* フローチャート表示エリア */
+        .flowchart {
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            margin-top: 10px;
+            min-height: 0px;
+        }
+
+        .center-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+    
+            /* 画面全体を覆うように設定 */
+            position: fixed; /* 他の要素の上に固定表示 */
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+    
+            /* 必要であれば背景を少し暗くしてモーダル表示のようにする */
+            background-color: rgba(0, 0, 0, 0.5); 
+    
+            z-index: 1000; /* 他のどの要素よりも手前に表示 */
+        }
+
+        .step {
+            display: absolute;
+            background-color: #e6f3ff;
+            border: 2px solid #0078d4;
+            border-radius: 6px;
+            padding: 8px 12px;
+            margin: 5px;
+            font-size: 12px;
+            min-width: 100px;
+            text-align: center;
+        }
+
+        .step-trigger {
+            background-color: #d4e6d4;
+            border-color: #28a745;
+            display: flex;
+            justify-content: center; /* 水平方向の中央揃え */
+            align-items: center;     /* 垂直方向の中央揃え */
+            font-size: 16px;         /* 文字サイズをお好みの大きさに指定 */
+        }
+
+        .step-action {
+            background-color: #e6f3ff;
+            border-color: #0078d4;
+            display: flex;
+            justify-content: center; /* 水平方向の中央揃え */
+            align-items: center;     /* 垂直方向の中央揃え */
+            font-size: 16px;         /* 文字サイズをお好みの大きさに指定 */
+        }
+
+        .end {
+            display: inline-block;
+            background-color: #ffe6f3;
+            border: 2px solid #dc3545;
+            border-radius: 6px;
+            padding: 8px 12px;
+            margin: 5px;
+            font-size: 12px;
+            /* min-width: 100px;*/
+            text-align: center;
+        }
+
+        .end-action {
+            background-color: #ffe6f3;
+            border-color: #dc3545;
+            display: flex;
+            justify-content: center; /* 水平方向の中央揃え */
+            align-items: center;     /* 垂直方向の中央揃え */
+            font-size: 16px;         /* 文字サイズをお好みの大きさに指定 */
+        }
+
+        .step-condition {
+            background-color: #fff3cd;
+            border-color: #ffc107;
+        }
+
+        .arrow-container {
+            text-align: center;
+        }
+
+        .arrow {
+            display: inline-block;
+            justify-content: center;
+            margin: 0 5px;
+            font-size: 18px;
+            color: #666;
+        }
+
+        /* エラー表示 */
+        .error {
+            background-color: #ffebee;
+            border: 1px solid #f44336;
+            color: #c62828;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+
+        /* 成功表示 */
+        .success {
+            background-color: #e8f5e8;
+            border: 1px solid #4caf50;
+            color: #2e7d32;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+
+        /* デバッグ情報表示エリア */
+        .debug-info {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px;
+            margin-top: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        /* Switch全体のコンテナ */
+        .switch-container {
+            position: relative; /* ★修正：メッセージを配置する基準点にする */
+            border: 2px dashed #0000FF; /* 青色の点線 */
+            background-color: rgba(0, 0, 255, 0.05); /* 青色の半透明背景 (5%の不透明度) */
+            border-radius: 8px; /* 角を丸くする */
+            padding: 25px 15px 15px 15px;  /* ★修正：メッセージ分の余白を上に確保 */
+            margin: 10px 0;    /* 上下の余白 */
+            text-align: bold; 
+            margin-bottom: 25px;
+        }
+
+        .switch-container::before {
+            /* "if"という文字を生成 */
+            content: 'SWITCH'; 
+
+            /* 親要素を基準に、絶対位置で指定 */
+            position: absolute; 
+
+            /* 位置の指定：右上の角から配置 */
+            top: -12px;  /* 上に12px移動（枠線と重なるように調整） */
+            right: 15px; /* 右から15pxの位置に配置 */
+
+            /* 装飾 */
+            background-color: #0000FF; /* 背景を白にして枠線を隠す */
+            padding: 0 8px;         /* 文字の左右に少し余白を持たせる */
+            color: #fff;             /* 文字色を少しグレーに */
+            font-weight: bold;    /* 太字にする */
+            font-size: 14px;      /* 文字サイズ */
+        }
+
+        /* 右上の「Switch」ラベル */
+        .switch-label {
+            position: absolute; /* 親要素を基準に絶対配置 */
+            top: 10px;
+            right: 15px;
+            color: #ffffff;
+            font-size: 14px;
+            font-weight: bold;
+            opacity: 0.8; /* 少しだけ透明に */
+        }
+
+        /* Loop全体のコンテナ */
+        .Loop-container {
+            position: relative; /* ★修正：メッセージを配置する基準点にする */
+            border: 2px dashed #0000FF; /* 青色の点線 */
+            background-color: rgba(0, 0, 255, 0.05); /* 青色の半透明背景 (5%の不透明度) */
+            border-radius: 8px; /* 角を丸くする */
+            padding: 25px 15px 15px 15px;  /* ★修正：メッセージ分の余白を上に確保 */
+            margin: 10px 0;    /* 上下の余白 */
+            text-align: left;    /* 中の要素を左揃えにする */
+            margin-bottom: 25px;
+        }
+
+        .Loop-container::before {
+            /* "if"という文字を生成 */
+            content: 'Loop'; 
+
+            /* 親要素を基準に、絶対位置で指定 */
+            position: absolute; 
+
+            /* 位置の指定：右上の角から配置 */
+            top: -12px;  /* 上に12px移動（枠線と重なるように調整） */
+            right: 15px; /* 右から15pxの位置に配置 */
+
+            /* 装飾 */
+            background-color: #0000FF; /* 背景を白にして枠線を隠す */
+            padding: 0 8px;         /* 文字の左右に少し余白を持たせる */
+            color: #fff;             /* 文字色を少しグレーに */
+            font-weight: bold;    /* 太字にする */
+            font-size: 14px;      /* 文字サイズ */
+        }
+
+        /* 右上の「Loop」ラベル */
+        .Loop-label {
+            position: absolute; /* 親要素を基準に絶対配置 */
+            top: 5px;
+            left: 15px;
+            color: #555;
+            font-size: 14px;
+            font-weight: bold;
+            opacity: 0.8; /* 少しだけ透明に */
+        }
+
+        /* アクションを入れるための白い点線枠 */
+        .action-area {
+            position: relative; /* condition-boxの基準になる */
+            width: 100%;
+            height: 100%;
+            background-color: #ffffff;
+            border: 2px dashed #cccccc; /* グレーの点線 */
+            border-radius: 6px;
+            padding: 20px;
+            box-sizing: border-box; /* paddingとborderを幅と高さに含める */
+        }
+
+        /* 左上の条件メッセージボックス */
+        .condition-box {
+            position: absolute;
+            top: -1px; /* 親の点線枠に重なるように配置 */
+            left: -1px;
+            background-color: #ffffff;
+            border-right: 2px dashed #cccccc; /* 右と下のボーダーを親と合わせる */
+            border-bottom: 2px dashed #cccccc;
+            padding: 5px 15px;
+            font-size: 13px;
+            color: #333;
+        }
+
+        /* --- ここからクラウドフローのスタイル --- */
+        .cloud-flowchart-container {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            /* ★修正: 垂直方向の間隔を広げる */
+            gap: 80px;
+            width: 100%;
+            padding: 20px 0;
+        }
+
+        .cloud-flowchart-container .step {
+            max-width: 180px;
+            word-break: break-all;
+        }
+
+        .actions-wrapper {
+            display: flex;
+            flex-direction: column;
+            /* ★修正: 垂直方向の間隔を広げる */
+            gap: 80px;
+            align-items: center;
+            width: 100%;
+        }
+        .arrow-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 5; /* ★修正: z-indexを明示 */
+        }
+        /* ★追加: 矢印グループにマウスイベントを許可 */
+        .arrow-canvas g {
+            pointer-events: all;
+            cursor: help;
+        }
+        /* ★追加: Switch専用の矢印キャンバス */
+        .arrow-canvas-switch {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 2; /* ★追加: 前面に表示 */
+        }
+        .arrow-canvas-switch g {
+            pointer-events: all;
+            cursor: help;
+        }
+
+        .level-container {
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            align-items: stretch; /* stretchに変更して高さを揃える */
+            /* ★修正: 水平方向の間隔を広げる */
+            gap: 80px;
+        }
+        .step {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            background-color: #e6f3ff;
+            border: 2px solid #0078d4;
+            border-radius: 6px;
+            padding: 8px 12px;
+            margin: 5px;
+            font-size: 12px;
+            text-align: center;
+            flex-shrink: 0;
+            position: relative;
+            box-shadow: 0 2px 4px rgb(255, 255, 255);
+            z-index: 3; /* ★ルール追加: 矢印より手前に表示 */
+            
+            /* --- ★ここから修正 --- */
+            /*max-width: 220px;     /* アクションの最大幅を設定 */
+            /*min-height: 50px;     /* 高さを確保して整列しやすくする */
+            word-wrap: break-word;    /* 長い単語でも折り返す */
+            box-sizing: border-box; /* paddingとborderを幅に含める */
+            /* --- ★ここまで修正 --- */
+        }
+        .step:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .step small {
+            color: #606770;
+            font-size: 0.85em;
+        }
+        .icon {
+            margin-right: 8px;
+            font-size: 1.2em;
+        }
+        /* --- コンテナ系スタイルの追加 --- */
+        .scope-header, .if-header, .until-header, .foreach-header, .switch-header, .parallel-header {
+            background-color: #e9ecef;
+            border: 1px solid #ced4da;
+            font-weight: bold;
+            border-radius: 8px;
+            padding: 12px 20px;
+            max-width: 350px;
+            text-align: center;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+            margin-bottom: 10px;
+        }
+        .if-condition-box {
+            border: 2px solid #28a745;
+            background-color: rgba(40, 167, 69, 0.05);
+            border-radius: 8px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .if-branches-container {
+            display: flex;
+            flex-direction: column;
+            /* ★修正: 分岐の間隔を広げる */
+            gap: 25px;
+            width: 100%;
+            align-items: stretch; /* 分岐の幅を親要素に合わせる */
+        }
+        .if-branch {
+            flex: 1;
+            border: 1px dashed #6c757d;
+            border-radius: 6px;
+             /* ★修正: 内側の余白を調整 */
+            padding: 30px 15px 15px;
+            background-color: #ffffff;
+            position: relative;
+        
+        }
+        .branch-label {
+            position: absolute;
+            top: 5px;
+            left: 10px;
+            font-size: 0.9em;
+            font-weight: bold;
+            color: #495057;
+            z-index: 1; /* ★z-indexを追加 */
+        }
+        .until-group-box {
+            border: 2px dashed #0078d4;
+            background-color: rgba(67, 149, 211, 0.322);
+            border-radius: 8px;
+            padding: 25px 15px 15px 15px;
+            margin: 10px 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 1
+        }
+        
+        /* until-group-box のテーマカラー（青色）を使ったラベルを疑似要素として追加 */
+
+        
+        .foreach-group-box {
+            border: 2px dashed #d83b01;
+            background-color: rgba(204, 84, 40, 0.247);
+            border-radius: 8px;
+            padding: 25px 15px 15px 15px;
+            margin: 10px 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            align-items: center;
+            z-index: 1
+        }
+        .switch-group-box {
+            border: 2px dashed #343a40;
+            background-color: rgba(92, 98, 104, 0.295);
+            border-radius: 8px;
+            padding: 25px 15px 15px 15px;
+            margin: 10px 0;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            position: relative; 
+            z-index: 1; /* ★修正: z-indexを明示 */
+        }
+        .case-group-box {
+            border: 2px dashed #adb5bd;
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 15px 10px 10px 10px;
+            margin: 10px 0;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            z-index: 1; /* ★修正: z-indexを明示 */
+        }
+        .case-label {
+            font-weight: bold;
+            color: #495057;
+            margin-bottom: 5px;
+            font-size: 0.95em;
+            z-index: 1
+        }
+
+        .if-branch > .if-condition-box {
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .region-group-box, 
+        .until-group-box, 
+        .foreach-group-box, 
+        .if-condition-box, 
+        .if-branch, 
+        .switch-group-box, 
+        .case-group-box {
+            pointer-events: none;
+        }
+
+        .scope-header, 
+        .if-header, 
+        .until-header, 
+        .foreach-header, 
+        .switch-header, 
+        .step, 
+        .branch-label, 
+        .case-label {
+            pointer-events: auto;
+        }       
+
+        /* ===== ▼▼▼ ここから並列処理用のスタイルを追加 ▼▼▼ ===== */
+        .parallel-group-box {
+            border: 2px dashed #9b59b6;
+            background-color: rgba(155, 89, 182, 0.05);
+            border-radius: 8px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .parallel-branches-container {
+            display: flex;
+            flex-direction: row; /* 横並びにする */
+            gap: 25px;
+            width: 100%;
+            align-items: stretch; 
+        }
+
+        .parallel-branch {
+            flex: 1;
+            border: 1px dashed #8e44ad;
+            border-radius: 6px;
+            padding: 30px 15px 15px;
+            background-color: #ffffff;
+            position: relative;
+        }
+        /* ===== ▲▲▲ ここまで並列処理用のスタイルを追加 ▲▲▲ ===== */
+
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="file-input-area" style="display: none;">
+            <input type="file" id="zipFileInput" accept=".zip,application/zip,application/x-zip,application/x-zip-compressed">
+            <button id="analyzeButton" onclick="analyzeZipFile()" disabled>解析開始</button>
+        </div>
+
+        <div class="loading" id="loadingIndicator">
+            <p>📊 zipファイルを解析中...</p>
+        </div>
+
+        <div class="results" id="resultsContainer"></div>
+    </div>
+
+    <script>
+        // グローバル変数：解析結果を保存するためのオブジェクト（メイン処理で使用）
+        let analysisResults = {
+            cloudFlows: [],   // クラウドフロー（JSONファイル）の解析結果を保存
+            desktopFlows: []  // デスクトップフロー（XMLファイル）の解析結果を保存
+        };
+
+        // ページ読み込み時にLocalStorageをチェックして自動解析
+        window.addEventListener('DOMContentLoaded', function() {
+            const pendingFile = localStorage.getItem('pendingFlowchartFile');
+            const pendingFileName = localStorage.getItem('pendingFlowchartFileName');
+
+            if (pendingFile && pendingFileName) {
+                console.log('🔄 メインページから渡されたファイルを自動解析します:', pendingFileName);
+
+                try {
+                    // Base64をArrayBufferに変換
+                    const binaryString = window.atob(pendingFile);
+                    const bytes = new Uint8Array(binaryString.length);
+                    for (let i = 0; i < binaryString.length; i++) {
+                        bytes[i] = binaryString.charCodeAt(i);
+                    }
+                    const arrayBuffer = bytes.buffer;
+
+                    // BlobとFileオブジェクトを作成
+                    const blob = new Blob([arrayBuffer], { type: 'application/zip' });
+                    const file = new File([blob], pendingFileName, { type: 'application/zip' });
+
+                    // ファイル入力に設定
+                    const fileInput = document.getElementById('zipFileInput');
+                    const dataTransfer = new DataTransfer();
+                    dataTransfer.items.add(file);
+                    fileInput.files = dataTransfer.files;
+
+                    // LocalStorageから削除
+                    localStorage.removeItem('pendingFlowchartFile');
+                    localStorage.removeItem('pendingFlowchartFileName');
+
+                    // 自動的に解析を開始
+                    console.log('✅ ファイルを設定しました。自動解析を開始します...');
+
+                    // 少し遅延させて確実に実行
+                    setTimeout(() => {
+                        analyzeZipFile();
+                    }, 500);
+
+                } catch (error) {
+                    console.error('❌ ファイルの復元中にエラーが発生:', error);
+                    localStorage.removeItem('pendingFlowchartFile');
+                    localStorage.removeItem('pendingFlowchartFileName');
+                }
+            }
+        });
+
+        // zipファイル識別関数：より詳細にファイルをチェック（file.typeが正しく設定されない場合があるため）
+        function isZipFile(file) {
+            if (!file) return false;
+
+            console.log('📋 ファイル詳細情報:');
+            console.log('  ファイル名:', file.name);
+            console.log('  ファイルタイプ:', file.type);
+            console.log('  ファイルサイズ:', file.size, 'バイト');
+            console.log('  最終更新日:', file.lastModified);
+
+            const validMimeTypes = [
+                'application/zip',
+                'application/x-zip-compressed',
+                'application/x-zip',
+                'multipart/x-zip'
+            ];
+
+            if (validMimeTypes.includes(file.type)) {
+                console.log('✅ MIMEタイプによるzip判定成功:', file.type);
+                return true;
+            }
+
+            const fileName = file.name.toLowerCase();
+            if (fileName.endsWith('.zip')) {
+                console.log('✅ 拡張子によるzip判定成功:', fileName);
+                return true;
+            }
+
+            if (file.size === 0) {
+                console.log('❌ ファイルサイズが0バイトです');
+                return false;
+            }
+            
+            console.log('⚠️ zipファイルとして識別できませんでした');
+            console.log('  期待するMIMEタイプ:', validMimeTypes.join(', '));
+            console.log('  実際のMIMEタイプ:', file.type || '(設定されていません)');
+
+            return false;
+        }
+
+        // ファイル選択時のイベントハンドラ
+        document.getElementById('zipFileInput').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            const analyzeButton = document.getElementById('analyzeButton');
+            const resultsContainer = document.getElementById('resultsContainer');
+            
+            resultsContainer.innerHTML = '';
+            console.log('📁 ファイル選択イベントが発生しました');
+
+            if (!file) {
+                console.log('❌ ファイルが選択されていません');
+                analyzeButton.disabled = true;
+                return;
+            }
+
+            if (isZipFile(file)) {
+                analyzeButton.disabled = false;
+                console.log('✅ zipファイルが選択されました:', file.name);
+                resultsContainer.innerHTML = `
+                    <div class="container">
+                        <div class="success">
+                            ✅ zipファイルを正常に識別しました: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)
+                            <br>「解析開始」ボタンをクリックして処理を開始してください。
+                        </div>
+                    </div>
+                `;
+            } else {
+                analyzeButton.disabled = true;
+                console.log('❌ zipファイル以外が選択されました:', file.name);
+                resultsContainer.innerHTML = `
+                    <div class="container">
+                        <div class="error">
+                            ❌ zipファイルを選択してください
+                            <br><strong>選択されたファイル:</strong> ${file.name}
+                            <br><strong>ファイルタイプ:</strong> ${file.type || '(不明)'}
+                            <br><strong>対応形式:</strong> .zip拡張子のzipファイル
+                        </div>
+                    </div>
+                `;
+            }
+        });
+
+        // メイン処理：zipファイルを解析する関数
+        async function analyzeZipFile() {
+            console.log('🚀 解析処理を開始します');
+            const fileInput = document.getElementById('zipFileInput');
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const resultsContainer = document.getElementById('resultsContainer');
+            const analyzeButton = document.getElementById('analyzeButton');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                alert('ファイルを選択してください。');
+                return;
+            }
+
+            try {
+                loadingIndicator.classList.add('show');
+                analyzeButton.disabled = true;
+                resultsContainer.innerHTML = '';
+
+                console.log('📦 zipファイルの読み込みを開始:', file.name);
+                console.log('📊 ファイル詳細: サイズ:', file.size, 'バイト, タイプ:', file.type);
+
+                if (!isZipFile(file)) {
+                    throw new Error(`選択されたファイルはzipファイルではありません: ${file.name}`);
+                }
+
+                console.log('🔄 JSZip.loadAsync()を実行中...');
+                const zip = await JSZip.loadAsync(file);
+                console.log('✅ zipファイルの読み込み完了');
+
+                const fileList = Object.keys(zip.files);
+                console.log('📁 zip内のファイル一覧 (' + fileList.length + '個):');
+                fileList.forEach(filename => {
+                    console.log('  - ' + filename + (zip.files[filename].dir ? ' (ディレクトリ)' : ''));
+                });
+
+                analysisResults.cloudFlows = [];
+                analysisResults.desktopFlows = [];
+
+                await analyzeWorkflowsFolder(zip);
+                await analyzeCustomizationsXml(zip);
+
+                displayResults();
+
+            } catch (error) {
+                console.error('❌ エラーが発生しました:', error);
+                console.error('❌ エラーの詳細:', error.stack);
+                let errorMessage = '';
+
+                if (error.message.includes('zipファイルではありません')) {
+                    errorMessage = `
+                        <div class="error">
+                            <h4>❌ ファイル形式エラー</h4>
+                            ${error.message}<br><br>
+                            <strong>対処方法:</strong><br>
+                            • .zip拡張子のファイルを選択してください<br>
+                            • Power Automateからエクスポートしたソリューションファイルを使用してください
+                        </div>
+                    `;
+                } else if (error.message.includes('corrupted') || error.message.includes('invalid')) {
+                    errorMessage = `
+                        <div class="error">
+                            <h4>❌ zipファイル破損エラー</h4>
+                            zipファイルが破損している可能性があります。<br><br>
+                            <strong>対処方法:</strong><br>
+                            • ファイルを再ダウンロードしてください<br>
+                            • 別のzipファイルで試してください
+                        </div>
+                    `;
+                } else {
+                    errorMessage = `
+                        <div class="error">
+                            <h4>❌ 予期しないエラー</h4>
+                            エラー: ${error.message}<br><br>
+                            <strong>対処方法:</strong><br>
+                            • ブラウザのコンソール（F12）でエラー詳細を確認してください<br>
+                            • 別のブラウザで試してください<br>
+                            • zipファイルが正しいPower Automateソリューションファイルか確認してください
+                        </div>
+                    `;
+                }
+                resultsContainer.innerHTML = errorMessage;
+            } finally {
+                loadingIndicator.classList.remove('show');
+                analyzeButton.disabled = false;
+            }
+        }
+
+        // Workflowsフォルダ内のJSONファイルを解析する関数
+        async function analyzeWorkflowsFolder(zip) {
+            console.log('📁 Workflowsフォルダの解析を開始');
+            for (const [filename, file] of Object.entries(zip.files)) {
+                if (filename.includes('Workflows/') && filename.endsWith('.json') && !file.dir) {
+                    console.log('📄 JSONファイルを発見:', filename);
+                    try {
+                        const content = await file.async('string');
+                        const jsonData = JSON.parse(content);
+                        console.log('📊 JSON解析完了:', filename);
+
+                        if (jsonData.properties &&
+                            jsonData.properties.definition &&
+                            jsonData.properties.definition.actions) {
+                            console.log('✅ actions要素を発見:', filename);
+                            analysisResults.cloudFlows.push({
+                                filename: filename,
+                                displayName: decodeURIComponent(filename.split('/').pop().replace('.json', '')),
+                                definition: jsonData.properties.definition,
+                                actions: jsonData.properties.definition.actions
+                            });
+                        } else {
+                            console.log('⚠️ actions要素が存在しないため処理をスキップ:', filename);
+                        }
+                    } catch (parseError) {
+                        console.error('❌ JSON解析エラー:', filename, parseError);
+                    }
+                }
+            }
+            console.log(`📊 クラウドフロー解析完了: ${analysisResults.cloudFlows.length}個のフローを発見`);
+        }
+
+        // customizations.xmlファイルを解析する関数
+        async function analyzeCustomizationsXml(zip) {
+            console.log('🔍 customizations.xmlファイルを検索中');
+            const customizationsFile = zip.file('customizations.xml');
+
+            if (!customizationsFile) {
+                console.log('⚠️ customizations.xmlファイルが見つかりませんでした');
+                return;
+            }
+
+            console.log('📄 customizations.xmlファイルを発見');
+            try {
+                const xmlContent = await customizationsFile.async('string');
+                console.log('✅ XML読み込み完了');
+
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(xmlContent, 'text/xml');
+                const workflows = xmlDoc.querySelectorAll('ImportExportXml Workflows Workflow');
+                console.log(`📊 ${workflows.length}個のWorkflow要素を発見`);
+
+                workflows.forEach((workflow, index) => {
+                    const definitionElement = workflow.querySelector('Definition');
+                    if (definitionElement) {
+                        console.log(`✅ Definition要素を発見 (Workflow ${index + 1})`);
+                        const workflowName = workflow.getAttribute('Name') || `Desktop Flow ${index + 1}`;
+                        const definitionContent = definitionElement.textContent || definitionElement.innerHTML;
+                        analysisResults.desktopFlows.push({
+                            name: workflowName,
+                            definition: definitionContent,
+                            index: index + 1
+                        });
+                        console.log(`💾 デスクトップフロー情報を保存: ${workflowName}`);
+                    } else {
+                        console.log(`⚠️ Definition要素が見つかりません (Workflow ${index + 1})`);
+                    }
+                });
+            } catch (error) {
+                console.error('❌ XML解析エラー:', error);
+            }
+            console.log(`📊 デスクトップフロー解析完了: ${analysisResults.desktopFlows.length}個のフローを発見`);
+        }
+
+        // 解析結果を画面に表示する関数
+        function displayResults() {
+            console.log('🖥️ 解析結果の表示を開始');
+            const resultsContainer = document.getElementById('resultsContainer');
+            let html = '';
+
+            
+
+            // クラウドフローの結果を表示
+            if (analysisResults.cloudFlows.length > 0) {
+                analysisResults.cloudFlows.forEach((flow, index) => {
+                    // ★変更: 乱数ではなく固定のIDを生成
+                    const panelId = `cloud-flow-${index}`;
+                    const containerId = `cf-container-${panelId}`; // フローチャートSVGコンテナのID
+
+                    // 新しいパネルUIを使用
+                    html += `<div class="collapsible-flow-panel">`;
+        
+                    // ★変更: onclickの第3引数に containerId を追加
+                    html += `<div class="collapsible-flow-header" id="${panelId}-header" onclick="toggleFlowPanel('${panelId}-content', this.id, '${containerId}')">`; 
+                    html += `  <div class="header-left">`;
+                    html += `    <i class="fas fa-project-diagram me-1"></i>`; // クラウドフローのアイコン
+                    html += `    <span class="panel-title">${flow.displayName}_（クラウドフロー）</span>`;
+                    html += `  </div>`;
+                    html += `  <div class="header-right">`;
+                    html += `    <span class="toggle-badge">詳細を表示 ▼</span>`;
+                    html += `  </div>`;
+                    html += `</div>`;
+                    
+                    // コンテンツ部分
+                    html += `<div class="collapsible-flow-content" id="${panelId}-content">`;
+                    html += `<h4><i class="fa-solid fa-layer-group"></i> フローチャート:</h4>`;
+                    // ★変更: generateCloudFlowChartの引数に panelId と containerId を追加
+                    html += generateCloudFlowChart(flow.actions, flow.definition, panelId, containerId);
+                    html += `</div>`;
+                    
+                    html += `</div>`; // .collapsible-flow-panel 閉じ
+                });
+                html += `</div>`;
+            }
+
+            // デスクトップフローの結果を表示
+            // デスクトップフローの結果を表示 (★ステップ2: 折りたたみUIに変更)
+                    
+            if (analysisResults.desktopFlows.length > 0) {
+
+                analysisResults.desktopFlows.forEach((flow, index) => {
+                    // 一意のIDを生成して、コンテンツを特定できるようにする
+                    const panelId = `desktop-flow-${index}`; 
+
+                    // .workflow-item の代わりに新しいパネルUIを使用
+                    html += `<div class="desktop-flow-panel">`;
+        
+                    // ヘッダー部分（クリック可能にする）
+                    // onclick属性でJS関数を呼び出し、対応するコンテンツIDと自身のIDを渡す
+                    html += `<div class="desktop-flow-header" id="${panelId}-header" onclick="toggleFlowPanel('${panelId}-content', this.id)">`; 
+                    html += `  <div class="header-left">`;
+                    html += `    <i class="fas fa-project-diagram me-1"></i>`; // デスクトップフローのアイコン
+                    html += `    <span class="panel-title">${flow.name}_（デスクトップフロー）</span>`;
+                    html += `  </div>`;
+                    html += `  <div class="header-right">`;
+                    html += `    <span class="toggle-badge">詳細を表示 ▼</span>`; // 開閉状態を示すインジケーター
+                    html += `  </div>`;
+                    html += `</div>`;
+                    
+                    // コンテンツ部分（デフォルトで非表示）
+                    html += `<div class="desktop-flow-content" id="${panelId}-content">`;
+                    // generateDesktopFlowChart がh4タグとフローチャート本体を生成する
+                    html += `<h4>🔗 フローチャート:</h4>`;
+                    html += generateDesktopFlowChart(flow.definition); 
+                    html += `</div>`;
+                    
+                    html += `</div>`; // .desktop-flow-panel 閉じ
+                });
+                html += `</div>`;
+            }
+
+            // 結果が何もない場合
+            if (analysisResults.cloudFlows.length === 0 && analysisResults.desktopFlows.length === 0) {
+                html += `<div class="container">`;
+                html += `<div class="error">解析可能なフローが見つかりませんでした。</div>`;
+                html += `</div>`;
+            }
+
+            resultsContainer.innerHTML = html;
+            console.log('✅ 解析結果の表示完了');
+        }
+
+        const ICONS = {
+            'Compose': '📝', 'Scope': '📁', 'If': '🔀', 'Until': '🔄',
+            'Foreach': '🔁', 'Switch': '🔃', 'Request': '▶️', 'Parallel': '⬬', 'default': '⚙️'
+        };
+        
+        // IDが一意になるようにユニークIDを引数に追加
+        function sanitizeForId(name, uniqueIdSuffix) {
+            return 'action-' + uniqueIdSuffix + '-' + encodeURIComponent(name).replace(/[.'()]/g, '_');
+        }
+
+        // IDを生成するためにユニークIDを引数に追加
+        function generateSimpleActionHtml(actionKey, action, uniqueIdSuffix) {
+            const actionType = action.type || 'Action';
+            const icon = `<span class="icon">${ICONS[actionType] || ICONS['default']}</span>`;
+            const elementId = sanitizeForId(actionKey, uniqueIdSuffix);
+            let html = `<div id="${elementId}" class="step step-type-${actionType.toLowerCase()}">`;
+            html += `${icon}${actionKey}<br><small>${actionType}</small>`;
+            html += `</div>`;
+            return html;
+        }
+
+        // IDを生成するためにユニークIDを引数に追加
+        function buildFlowchartHtml(actions, uniqueIdSuffix) {
+            const actionKeys = Object.keys(actions);
+            if (actionKeys.length === 0) return { html: '', successors: {} };
+
+            const dependencies = {};
+            const successors = {};
+
+            actionKeys.forEach(key => {
+                if (!successors[key]) successors[key] = [];
+                const prevActions = Object.keys(actions[key].runAfter || {});
+                let validDependencyCount = 0;
+                prevActions.forEach(prevKey => {
+                    if (actions[prevKey]) {
+                        validDependencyCount++;
+                        successors[prevKey] = successors[prevKey] || [];
+                        successors[prevKey].push(key);
+                    }
+                });
+                dependencies[key] = validDependencyCount;
+            });
+
+            let queue = actionKeys.filter(key => dependencies[key] === 0);
+            let html = '';
+            const processedActions = new Set();
+
+            while (queue.length > 0) {
+                const currentLevelActions = [...queue];
+                queue = [];
+
+                html += '<div class="level-container">';
+                currentLevelActions.forEach(actionKey => {
+                    if (processedActions.has(actionKey)) return;
+                    const action = actions[actionKey];
+                    const actionType = action.type || 'Action';
+                    const icon = `<span class="icon">${ICONS[actionType] || ICONS['default']}</span>`;
+                    const elementId = sanitizeForId(actionKey, uniqueIdSuffix);
+
+                    if (actionType === 'Scope' || actionType === 'Until' || actionType === 'Foreach') {
+                        let innerHtml = '';
+                        if (action.actions && Object.keys(action.actions).length > 0) {
+                            const innerFlow = buildFlowchartHtml(action.actions, uniqueIdSuffix);
+                            if (actionType === 'Until' || actionType === 'Foreach' || actionType === 'Scope') {
+                                innerHtml = (innerFlow.html || '').split('</div><div class="level-container">').join('</div><br><br><div class="level-container">');
+                            } else {
+                                innerHtml = innerFlow.html;
+                            }
+                            Object.assign(successors, innerFlow.successors);
+                        }
+                        
+                        let boxClass = actionType.toLowerCase() + "-group-box";
+                        if (actionType === 'Scope') {
+                            boxClass = 'region-group-box';
+                        }
+                        const headerClass = actionType.toLowerCase() + "-header";
+                        html += `<div id="${elementId}" class="${boxClass}"><div class="${headerClass}">${icon}${actionKey}</div>${innerHtml}</div>`;
+                    } else if (actionType === 'If') {
+                        const trueActions = action.actions || {};
+                        const trueBranchFlow = buildFlowchartHtml(trueActions, uniqueIdSuffix);
+                        Object.assign(successors, trueBranchFlow.successors);
+
+                        const falseActions = (action.else && action.else.actions) ? action.else.actions : {};
+                        const falseBranchFlow = buildFlowchartHtml(falseActions, uniqueIdSuffix);
+                        Object.assign(successors, falseBranchFlow.successors);
+
+                        const trueHtmlWithBreaks = (trueBranchFlow.html || '').split('</div><div class="level-container">').join('</div><br><br><br><div class="level-container">');
+                        const falseHtmlWithBreaks = (falseBranchFlow.html || '').split('</div><div class="level-container">').join('</div><br><br><br><div class="level-container">');
+
+                        html += `<div id="${elementId}" class="if-condition-box">
+                                        <div class="if-header">${icon}${actionKey}</div>
+                                        <div class="if-branches-container">
+                                            <div class="if-branch"><div class="branch-label">True</div>${trueHtmlWithBreaks}</div>
+                                            <div class="if-branch"><div class="branch-label">False</div>${falseHtmlWithBreaks}</div>
+                                        </div>
+                                   </div>`;
+                    } else if (actionType === 'Switch') {
+                        let caseHtml = '';
+                        if (action.cases) {
+                            for (const caseKey in action.cases) {
+                                const caseObj = action.cases[caseKey];
+                                let caseInnerFlow = buildFlowchartHtml(caseObj.actions || {}, uniqueIdSuffix);
+                                Object.assign(successors, caseInnerFlow.successors);
+                                const innerHtmlWithBreaks = (caseInnerFlow.html || '').split('</div><div class="level-container">').join('</div><br><br><div class="level-container">');
+                                caseHtml += `<div class="case-group-box"><div class="case-label">Case: ${caseObj.case ?? caseKey}</div>${innerHtmlWithBreaks}</div>`;
+                            }
+                        }
+                        let defaultHtml = '';
+                        if (action.default && action.default.actions) {
+                            const defaultInnerFlow = buildFlowchartHtml(action.default.actions, uniqueIdSuffix);
+                            Object.assign(successors, defaultInnerFlow.successors);
+                            const defaultInnerHtmlWithBreaks = (defaultInnerFlow.html || '').split('</div><div class="level-container">').join('</div><br><div class="level-container">');
+                            defaultHtml = `<div class="case-group-box"><div class="case-label">Default</div>${defaultInnerHtmlWithBreaks}</div>`;
+                        }
+                        html += `<div id="${elementId}" class="switch-group-box"><div class="switch-header">${icon}${actionKey}</div>${caseHtml}${defaultHtml}</div>`;
+                    
+                    // ===== ▼▼▼ ここからParallelアクションの処理を追加 ▼▼▼ =====
+                    } else if (actionType === 'Parallel') {
+                        let branchesHtml = '';
+                        if (action.branches) {
+                            for (const branchKey in action.branches) {
+                                const branchObj = action.branches[branchKey];
+                                let branchInnerFlow = buildFlowchartHtml(branchObj.actions || {}, uniqueIdSuffix);
+                                Object.assign(successors, branchInnerFlow.successors);
+                                const innerHtmlWithBreaks = (branchInnerFlow.html || '').split('</div><div class="level-container">').join('</div><br><br><div class="level-container">');
+                                branchesHtml += `<div class="parallel-branch"><div class="branch-label">${branchKey}</div>${innerHtmlWithBreaks}</div>`;
+                            }
+                        }
+                        html += `<div id="${elementId}" class="parallel-group-box">
+                                        <div class="parallel-header">${icon}${actionKey}</div>
+                                        <div class="parallel-branches-container">${branchesHtml}</div>
+                                   </div>`;
+                    // ===== ▲▲▲ ここまでParallelアクションの処理を追加 ▲▲▲ =====
+
+                    } else {
+                        html += generateSimpleActionHtml(actionKey, action, uniqueIdSuffix);
+                    }
+
+                    processedActions.add(actionKey);
+                    (successors[actionKey] || []).forEach(nextActionKey => {
+                        dependencies[nextActionKey]--;
+                        if (dependencies[nextActionKey] === 0) queue.push(nextActionKey);
+                    });
+                });
+                html += '</div>';
+            }
+            
+            if (processedActions.size < actionKeys.length) {
+                    actionKeys.forEach(key => {
+                        if (!processedActions.has(key)) {
+                                console.warn(`アクション "${key}" は循環依存の可能性があります。`);
+                                html += '<div class="level-container">' + generateSimpleActionHtml(key, actions[key], uniqueIdSuffix) + '</div>';
+                        }
+                    });
+            }
+
+            return { html, successors };
+        }
+        
+        /**
+         * 矢印の色とツールチップを決定する共通関数
+         * @param {string[]} runAfterConditions - runAfterの条件配列 (例: ["Failed", "TimedOut"])
+         * @param {string} uniqueIdSuffix - マーカーID用の一意な接尾辞
+         * @returns {object} { arrowColor, markerId, tooltipText, isDashed }
+         */
+        function getArrowStyle(runAfterConditions, uniqueIdSuffix) {
+            // デフォルト値（runAfterがない、または空の場合）は「成功」
+            let arrowColor = '#28a745';
+            let markerId = `arrowhead-succeeded-${uniqueIdSuffix}`;
+            let tooltipText = '成功時';
+            let isDashed = false;
+
+            if (runAfterConditions && runAfterConditions.length > 0) {
+                const upperCaseConditions = runAfterConditions.map(c => c.trim().toUpperCase());
+                tooltipText = `条件: ${upperCaseConditions.join(', ')}`;
+                isDashed = upperCaseConditions.length > 1;
+
+                // 優先順位: 失敗 > タイムアウト > スキップ > 成功
+                if (upperCaseConditions.includes('FAILED')) {
+                    arrowColor = '#dc3545';
+                    markerId = `arrowhead-failed-${uniqueIdSuffix}`;
+                } else if (upperCaseConditions.includes('TIMEDOUT')) {
+                    arrowColor = '#ffc107';
+                    markerId = `arrowhead-timedout-${uniqueIdSuffix}`;
+                } else if (upperCaseConditions.includes('SKIPPED')) {
+                    arrowColor = '#6c757d';
+                    markerId = `arrowhead-skipped-${uniqueIdSuffix}`;
+                }
+                // 'SUCCEEDED' のみの場合は、デフォルトの緑のまま
+            }
+            
+            return { arrowColor, markerId, tooltipText, isDashed };
+        }
+
+        // 矢印を描画する関数
+        function drawArrows(successors, containerId, uniqueIdSuffix, actions, rewiredRunAfters) {
+            const processedSwitchConnections = new Set();
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            const svg = container.querySelector('.arrow-canvas');
+            if (!svg) return;
+
+            svg.innerHTML = '';
+            const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+            defs.innerHTML = `
+                <marker id="arrowhead-succeeded-${uniqueIdSuffix}" markerWidth="10" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#28a745" /></marker>
+                <marker id="arrowhead-failed-${uniqueIdSuffix}" markerWidth="10" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#dc3545" /></marker>
+                <marker id="arrowhead-skipped-${uniqueIdSuffix}" markerWidth="10" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#6c757d" /></marker>
+                <marker id="arrowhead-timedout-${uniqueIdSuffix}" markerWidth="10" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#ffc107" /></marker>
+                <marker id="arrowhead-default-${uniqueIdSuffix}" markerWidth="10" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#6c757d" /></marker>
+            `;
+            svg.appendChild(defs);
+
+            const containerRect = container.getBoundingClientRect();
+            if (containerRect.width === 0) return;
+
+            for (const sourceKey in successors) {
+                for (const targetKey of new Set(successors[sourceKey])) {
+                    const sourceElement = document.getElementById(sanitizeForId(sourceKey, uniqueIdSuffix));
+                    const targetElement = document.getElementById(sanitizeForId(targetKey, uniqueIdSuffix));
+
+                    if (sourceElement && targetElement) {
+                        const sourceIfBranch = sourceElement.closest('.if-branch');
+                        if (sourceIfBranch && sourceIfBranch.contains(targetElement)) {
+                            continue;
+                        }
+                        
+                        let startX, startY, endX, endY;
+                        const sourceRect = sourceElement.getBoundingClientRect();
+                        const targetRect = targetElement.getBoundingClientRect();
+
+                        const sourceSwitchBox = sourceElement.closest('.switch-group-box');
+
+                        // 条件: 始点がSwitch内で、終点がそのSwitchの外の場合
+                        if (sourceSwitchBox && !sourceSwitchBox.contains(targetElement)) {
+                            const connectionKey = `${sourceSwitchBox.id}->${targetElement.id}`;
+                            if (processedSwitchConnections.has(connectionKey)) {
+                                continue; // このSwitchからの矢印は描画済みのためスキップ
+                            }
+                            processedSwitchConnections.add(connectionKey);
+
+                            // 始点をSwitchボックスの下部中央に設定
+                            const switchRect = sourceSwitchBox.getBoundingClientRect();
+                            startX = switchRect.left + switchRect.width / 2 - containerRect.left;
+                            startY = switchRect.bottom - containerRect.top;
+                            
+                        } else {
+                            // それ以外の通常の場合
+                            startX = sourceRect.left + sourceRect.width / 2 - containerRect.left;
+                            startY = sourceRect.bottom - containerRect.top;
+                        }
+
+                        if (sourceRect.width === 0 || targetRect.width === 0) continue;
+                        
+                        // まず、デフォルトの終点をターゲット要素の上部中央に設定
+                        endX = targetRect.left + targetRect.width / 2 - containerRect.left;
+                        endY = targetRect.top - containerRect.top;
+
+                        // ==================================================================
+                        // ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
+                        //
+                        //                     ここからが今回の修正箇所です
+                        //
+                        // ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
+                        // ==================================================================
+                        const targetContainer = targetElement.closest('.until-group-box, .foreach-group-box, .switch-group-box, .region-group-box, .if-condition-box, .parallel-group-box');
+                        if (targetContainer && !targetContainer.contains(sourceElement)) {
+                            // コンテナ（枠）自体の座標を使用するように変更
+                            const targetBoxRect = targetContainer.getBoundingClientRect();
+
+                            endX = targetBoxRect.left + targetBoxRect.width / 2 - containerRect.left;
+                            endY = targetBoxRect.top - containerRect.top;
+                        }
+                        // ==================================================================
+                        // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
+                        //
+                        //                     ここまでが今回の修正箇所です
+                        //
+                        // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
+                        // ==================================================================
+
+
+                        // 特殊ケース: Ifブロックから内部の分岐への矢印の始点座標を調整
+                        if (sourceElement.classList.contains('if-condition-box') && sourceElement.contains(targetElement)) {
+                            const sourceHeader = sourceElement.querySelector('.if-header');
+                            const sourceHeaderRect = sourceHeader ? sourceHeader.getBoundingClientRect() : sourceRect;
+                            const targetBranch = targetElement.closest('.if-branch');
+                            const trueBranch = sourceElement.querySelector('.if-branch:first-of-type');
+                            startY = sourceHeaderRect.bottom - containerRect.top;
+                            if (targetBranch && trueBranch) {
+                                const trueBranchRect = trueBranch.getBoundingClientRect();
+                                startX = (targetBranch === trueBranch)
+                                    ? trueBranchRect.left + trueBranchRect.width / 2 - containerRect.left
+                                    : sourceRect.right - (sourceRect.width - trueBranchRect.width) / 2 - (trueBranchRect.width / 2) - containerRect.left;
+                            } else {
+                                startX = sourceHeaderRect.left + sourceHeaderRect.width / 2 - containerRect.left;
+                            }
+                        }
+                        
+                        if (endY <= startY + 1) continue; 
+
+                        const rewiredKey = `${sourceKey}->${targetKey}`;
+                        const runAfterConditions = rewiredRunAfters[rewiredKey] || actions[targetKey]?.runAfter?.[sourceKey];
+                        const { arrowColor, markerId, tooltipText, isDashed } = getArrowStyle(runAfterConditions, uniqueIdSuffix);
+                        
+                        const visiblePath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                        if (isDashed) {
+                            visiblePath.setAttribute('stroke-dasharray', '6 4');
+                        }
+                        
+                        const midY = Math.max(startY + 20, endY - 35);
+                        
+                        const pathData = `M ${startX} ${startY} V ${midY} H ${endX} V ${endY}`;
+                        
+                        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                        const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+                        title.textContent = tooltipText;
+                        
+                        visiblePath.setAttribute('d', pathData);
+                        visiblePath.setAttribute('stroke', arrowColor); 
+                        visiblePath.setAttribute('stroke-width', 2);
+                        visiblePath.setAttribute('fill', 'none');
+                        visiblePath.setAttribute('marker-end', `url(#${markerId})`); 
+                        visiblePath.setAttribute('pointer-events', 'none'); 
+                        g.appendChild(visiblePath);
+
+                        const hitboxPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                        hitboxPath.setAttribute('d', pathData);
+                        hitboxPath.setAttribute('stroke', 'transparent'); 
+                        hitboxPath.setAttribute('stroke-width', '10');   
+                        hitboxPath.setAttribute('fill', 'none');
+                        hitboxPath.setAttribute('pointer-events', 'stroke');
+                        hitboxPath.appendChild(title);
+                        g.appendChild(hitboxPath);
+                        
+                        svg.appendChild(g);
+                    }
+                }
+            }
+        }
+
+        /**
+         * ネストされたactionsオブジェクトを再帰的に平坦化（フラット化）する関数
+         */
+        function flattenActions(actions, allActions = {}) {
+            if (!actions) return allActions;
+            for (const key in actions) {
+                const action = actions[key];
+                allActions[key] = action;
+                if (action.actions) flattenActions(action.actions, allActions);
+                if (action.else && action.else.actions) flattenActions(action.else.actions, allActions);
+                if (action.cases) {
+                    for (const caseKey in action.cases) {
+                        if (action.cases[caseKey].actions) flattenActions(action.cases[caseKey].actions, allActions);
+                    }
+                }
+                if (action.default && action.default.actions) flattenActions(action.default.actions, allActions);
+                // ===== ▼▼▼ Parallelのbranchesも平坦化の対象に追加 ▼▼▼ =====
+                if (action.branches) {
+                    for (const branchKey in action.branches) {
+                        if(action.branches[branchKey].actions) flattenActions(action.branches[branchKey].actions, allActions);
+                    }
+                }
+                // ===== ▲▲▲ Parallelのbranchesも平坦化の対象に追加 ▲▲▲ =====
+            }
+            return allActions;
+        }
+
+        /**
+         * Switch, Until, Foreachのようなコンテナアクションの矢印を論理的に再接続します。
+         *【最新版】空のコンテナを正しく処理するように修正
+         */
+        function rewireSuccessorsForContainers(rootActions, allActionsFlat, successors, rewiredRunAfters) {
+            const findEntryPoints = (actionBlock) => {
+                if (!actionBlock) return [];
+                const keysInBlock = new Set(Object.keys(actionBlock));
+                return Array.from(keysInBlock).filter(key => {
+                    const runAfterKeys = Object.keys(actionBlock[key].runAfter || {});
+                    return runAfterKeys.every(dep => !keysInBlock.has(dep));
+                });
+            };
+
+            function traverseAndRewire(currentActions) {
+                if (!currentActions) return;
+                Object.keys(currentActions).forEach(key => {
+                    const action = currentActions[key];
+
+                    if (['Scope', 'Switch', 'Until', 'Foreach', 'Parallel'].includes(action.type)) {
+                        const containerKey = key;
+                        const containerPredecessors = Object.keys(successors).filter(p => successors[p] && successors[p].includes(containerKey));
+                        
+                        let allEntryPoints = [];
+                        let isContainerEmpty = true;
+                        
+                        let subBlocks = [];
+                        if (action.type === 'Switch') {
+                            subBlocks = Object.values(action.cases || {}).map(c => c.actions);
+                            if (action.default?.actions) subBlocks.push(action.default.actions);
+                        } else if (action.type === 'Parallel') {
+                            subBlocks = Object.values(action.branches || {}).map(b => b.actions);
+                        } else { // Scope, Until, Foreach
+                            if (action.actions) subBlocks.push(action.actions);
+                        }
+                        
+                        isContainerEmpty = subBlocks.length === 0 || subBlocks.every(b => !b || Object.keys(b).length === 0);
+
+                        if (!isContainerEmpty) {
+                            subBlocks.forEach(block => {
+                                allEntryPoints.push(...findEntryPoints(block));
+                            });
+                        }
+
+                        /*
+                        // ▼▼▼ このブロック全体をコメントアウトします ▼▼▼
+                        // コンテナが空でない場合のみ、入口の接続を再配線する
+                        if (!isContainerEmpty) {
+                            containerPredecessors.forEach(pred => {
+                                const originalRunAfter = action.runAfter?.[pred];
+                                successors[pred] = (successors[pred] || []).filter(s => s !== containerKey);
+                                [...new Set(allEntryPoints)].forEach(entry => {
+                                    successors[pred].push(entry);
+                                    if (originalRunAfter) {
+                                        rewiredRunAfters[`${pred}->${entry}`] = originalRunAfter;
+                                    }
+                                });
+                            });
+                        }
+                        */
+                    }
+
+                    // 再帰呼び出し
+                    if (action.actions) traverseAndRewire(action.actions);
+                    if (action.else?.actions) traverseAndRewire(action.else.actions);
+                    if (action.cases) Object.values(action.cases).forEach(c => traverseAndRewire(c.actions));
+                    if (action.default?.actions) traverseAndRewire(action.default.actions);
+                    if (action.branches) Object.values(action.branches).forEach(b => traverseAndRewire(b.actions));
+                });
+            }
+            traverseAndRewire(rootActions);
+        }
+        
+        /**
+         * Switchケース内のアクション間の矢印を描画する
+         */
+        function drawCaseArrows(switchAction, containerId, uniqueIdSuffix) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            const svg = container.querySelector('.arrow-canvas-switch');
+            if (!svg) return;
+            
+            const markerSuffix = `${uniqueIdSuffix}-case`;
+            if (!document.getElementById(`arrowhead-succeeded-${markerSuffix}`)) {
+                const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+                defs.innerHTML = `
+                    <marker id="arrowhead-succeeded-${markerSuffix}" markerWidth="10" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#28a745" /></marker>
+                    <marker id="arrowhead-failed-${markerSuffix}" markerWidth="10" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#dc3545" /></marker>
+                    <marker id="arrowhead-skipped-${markerSuffix}" markerWidth="10" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#6c757d" /></marker>
+                    <marker id="arrowhead-timedout-${markerSuffix}" markerWidth="10" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#ffc107" /></marker>
+                    <marker id="arrowhead-default-${markerSuffix}" markerWidth="10" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#6c757d" /></marker>
+                `;
+                svg.appendChild(defs);
+            }
+            const internalActions = {};
+            const internalSuccessors = {};
+            const processCase = (caseObj) => {
+                if (!caseObj || !caseObj.actions) return;
+                Object.assign(internalActions, caseObj.actions);
+                const { successors } = buildFlowchartHtml(caseObj.actions, uniqueIdSuffix);
+                for (const key in successors) {
+                    internalSuccessors[key] = (internalSuccessors[key] || []).concat(successors[key]);
+                }
+            };
+            if (switchAction.cases) Object.values(switchAction.cases).forEach(processCase);
+            if (switchAction.default) processCase(switchAction.default);
+            const containerRect = container.getBoundingClientRect();
+            if (containerRect.width === 0) return;
+
+            for (const sourceKey in internalSuccessors) {
+                for (const targetKey of new Set(internalSuccessors[sourceKey])) {
+                    const sourceElement = document.getElementById(sanitizeForId(sourceKey, uniqueIdSuffix));
+                    const targetElement = document.getElementById(sanitizeForId(targetKey, uniqueIdSuffix));
+                    if (sourceElement && targetElement && sourceElement.closest('.case-group-box') === targetElement.closest('.case-group-box')) {
+                        const sourceRect = sourceElement.getBoundingClientRect();
+                        const targetRect = targetElement.getBoundingClientRect();
+                        if (sourceRect.width === 0 || targetRect.width === 0) continue;
+                        const startX = sourceRect.left + sourceRect.width / 2 - containerRect.left;
+                        const startY = sourceRect.bottom - containerRect.top;
+                        const endX = targetRect.left + targetRect.width / 2 - containerRect.left;
+                        const endY = targetRect.top - containerRect.top;
+                        if (endY <= startY + 1) continue;
+
+                        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                        const visiblePath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+
+                        const runAfterConditions = internalActions[targetKey]?.runAfter?.[sourceKey];
+                        const { arrowColor, markerId, tooltipText, isDashed } = getArrowStyle(runAfterConditions, markerSuffix);
+
+                        if(isDashed) {
+                            visiblePath.setAttribute('stroke-dasharray', '6 4');
+                        }
+                        
+                        const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+                        title.textContent = tooltipText;
+
+                        const hitboxPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                        const pathData = `M ${startX} ${startY} V ${startY + 35} H ${endX} V ${endY}`;
+                        hitboxPath.setAttribute('d', pathData);
+                        hitboxPath.setAttribute('stroke', 'transparent');
+                        hitboxPath.setAttribute('stroke-width', '10');
+                        hitboxPath.setAttribute('fill', 'none');
+                        hitboxPath.setAttribute('pointer-events', 'stroke');
+                        hitboxPath.appendChild(title);
+
+                        visiblePath.setAttribute('d', pathData);
+                        visiblePath.setAttribute('stroke', arrowColor);
+                        visiblePath.setAttribute('stroke-width', 2);
+                        visiblePath.setAttribute('fill', 'none');
+                        visiblePath.setAttribute('marker-end', `url(#${markerId})`);
+                        
+                        g.appendChild(visiblePath);
+                        g.appendChild(hitboxPath);
+                        svg.appendChild(g);
+                    }
+                }
+            }
+        }
+        
+        /**
+         * IFブランチ内のアクション間の矢印を描画する
+         */
+        function drawIfBranchArrows(ifAction, containerId, uniqueIdSuffix) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            const svg = container.querySelector('.arrow-canvas-switch');
+            if (!svg) return;
+
+            const markerSuffix = `${uniqueIdSuffix}-if-branch`;
+            if (!document.getElementById(`arrowhead-succeeded-${markerSuffix}`)) {
+                const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+                defs.innerHTML = `
+                    <marker id="arrowhead-succeeded-${markerSuffix}" markerWidth="10" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#28a745" /></marker>
+                    <marker id="arrowhead-failed-${markerSuffix}" markerWidth="10" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#dc3545" /></marker>
+                    <marker id="arrowhead-skipped-${markerSuffix}" markerWidth="10" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#6c757d" /></marker>
+                    <marker id="arrowhead-timedout-${markerSuffix}" markerWidth="10" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#ffc107" /></marker>
+                    <marker id="arrowhead-default-${markerSuffix}" markerWidth="10" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#6c757d" /></marker>
+                `;
+                svg.appendChild(defs);
+            }
+
+            const internalActions = {};
+            const internalSuccessors = {};
+            const processBranch = (branchActions) => {
+                if (!branchActions) return;
+                Object.assign(internalActions, branchActions);
+                Object.keys(branchActions).forEach(key => {
+                    const runAfterKeys = Object.keys(branchActions[key].runAfter || {});
+                    runAfterKeys.forEach(prevKey => {
+                        if (branchActions[prevKey]) {
+                            internalSuccessors[prevKey] = internalSuccessors[prevKey] || [];
+                            internalSuccessors[prevKey].push(key);
+                        }
+                    });
+                });
+            };
+            processBranch(ifAction.actions);
+            if (ifAction.else) {
+                processBranch(ifAction.else.actions);
+            }
+            
+            const containerRect = container.getBoundingClientRect();
+            if (containerRect.width === 0) return;
+
+            for (const sourceKey in internalSuccessors) {
+                for (const targetKey of new Set(internalSuccessors[sourceKey])) {
+                    const sourceElement = document.getElementById(sanitizeForId(sourceKey, uniqueIdSuffix));
+                    const targetElement = document.getElementById(sanitizeForId(targetKey, uniqueIdSuffix));
+                    
+                    if (sourceElement && targetElement && sourceElement.closest('.if-branch') === targetElement.closest('.if-branch')) {
+                        const sourceRect = sourceElement.getBoundingClientRect();
+                        const targetRect = targetElement.getBoundingClientRect();
+                        if (sourceRect.width === 0 || targetRect.width === 0) continue;
+
+                        const startX = sourceRect.left + sourceRect.width / 2 - containerRect.left;
+                        const startY = sourceRect.bottom - containerRect.top;
+                        const endX = targetRect.left + targetRect.width / 2 - containerRect.left;
+                        const endY = targetRect.top - containerRect.top;
+                        if (endY <= startY + 1) continue;
+
+                        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                        const visiblePath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                        
+                        const runAfterConditions = internalActions[targetKey]?.runAfter?.[sourceKey];
+                        const { arrowColor, markerId, tooltipText, isDashed } = getArrowStyle(runAfterConditions, markerSuffix);
+                        
+                        if (isDashed) {
+                            visiblePath.setAttribute('stroke-dasharray', '6 4');
+                        }
+                        
+                        const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+                        title.textContent = tooltipText;
+
+                        const pathData = `M ${startX} ${startY} V ${startY + 35} H ${endX} V ${endY}`;
+                        visiblePath.setAttribute('d', pathData);
+                        visiblePath.setAttribute('stroke', arrowColor);
+                        visiblePath.setAttribute('stroke-width', 2);
+                        visiblePath.setAttribute('fill', 'none');
+                        visiblePath.setAttribute('marker-end', `url(#${markerId})`);
+                        
+                        const hitboxPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                        hitboxPath.setAttribute('d', pathData);
+                        hitboxPath.setAttribute('stroke', 'transparent');
+                        hitboxPath.setAttribute('stroke-width', '10');
+                        hitboxPath.setAttribute('fill', 'none');
+                        hitboxPath.setAttribute('pointer-events', 'stroke');
+                        hitboxPath.appendChild(title);
+
+                        g.appendChild(visiblePath);
+                        g.appendChild(hitboxPath);
+                        svg.appendChild(g);
+                    }
+                }
+            }
+        }
+        
+        /**
+         * Until/Foreachループ内のアクション間の矢印を描画する新しい関数
+         */
+        function drawLoopArrows(loopAction, containerId, uniqueIdSuffix) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            const svg = container.querySelector('.arrow-canvas-switch');
+            if (!svg) return;
+
+            const markerSuffix = `${uniqueIdSuffix}-loop`;
+            if (!document.getElementById(`arrowhead-succeeded-${markerSuffix}`)) {
+                const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+                defs.innerHTML = `
+                    <marker id="arrowhead-succeeded-${markerSuffix}" markerWidth="10" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#28a745" /></marker>
+                    <marker id="arrowhead-failed-${markerSuffix}" markerWidth="10" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#dc3545" /></marker>
+                    <marker id="arrowhead-skipped-${markerSuffix}" markerWidth="10" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#6c757d" /></marker>
+                    <marker id="arrowhead-timedout-${markerSuffix}" markerWidth="10" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#ffc107" /></marker>
+                    <marker id="arrowhead-default-${markerSuffix}" markerWidth="10" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#6c757d" /></marker>
+                `;
+                svg.appendChild(defs);
+            }
+
+            const internalActions = loopAction.actions || {};
+            if (Object.keys(internalActions).length === 0) return;
+
+            const internalSuccessors = {};
+            Object.keys(internalActions).forEach(key => {
+                const prevActions = Object.keys(internalActions[key].runAfter || {});
+                prevActions.forEach(prevKey => {
+                    if (internalActions[prevKey]) {
+                        internalSuccessors[prevKey] = internalSuccessors[prevKey] || [];
+                        internalSuccessors[prevKey].push(key);
+                    }
+                });
+            });
+
+            const containerRect = container.getBoundingClientRect();
+            if (containerRect.width === 0) return;
+            
+            const loopContainerSelector = `.${loopAction.type.toLowerCase()}-group-box`;
+
+            for (const sourceKey in internalSuccessors) {
+                for (const targetKey of new Set(internalSuccessors[sourceKey])) {
+                    const sourceElement = document.getElementById(sanitizeForId(sourceKey, uniqueIdSuffix));
+                    const targetElement = document.getElementById(sanitizeForId(targetKey, uniqueIdSuffix));
+                    
+                    if (sourceElement && targetElement && sourceElement.closest(loopContainerSelector) && sourceElement.closest(loopContainerSelector) === targetElement.closest(loopContainerSelector)) {
+                          const sourceRect = sourceElement.getBoundingClientRect();
+                          const targetRect = targetElement.getBoundingClientRect();
+                          if (sourceRect.width === 0 || targetRect.width === 0) continue;
+                          const startX = sourceRect.left + sourceRect.width / 2 - containerRect.left;
+                          const startY = sourceRect.bottom - containerRect.top;
+                          const endX = targetRect.left + targetRect.width / 2 - containerRect.left;
+                          const endY = targetRect.top - containerRect.top;
+                          if (endY <= startY + 1) continue;
+
+                          const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                          const visiblePath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+
+                          const runAfterConditions = internalActions[targetKey]?.runAfter?.[sourceKey];
+                          const { arrowColor, markerId, tooltipText, isDashed } = getArrowStyle(runAfterConditions, markerSuffix);
+                          
+                          if(isDashed) {
+                                visiblePath.setAttribute('stroke-dasharray', '6 4');
+                          }
+                          
+                          const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+                          title.textContent = tooltipText;
+
+                          const hitboxPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                          const pathData = `M ${startX} ${startY} V ${startY + 35} H ${endX} V ${endY}`;
+                          hitboxPath.setAttribute('d', pathData);
+                          hitboxPath.setAttribute('stroke', 'transparent');
+                          hitboxPath.setAttribute('stroke-width', '10');
+                          hitboxPath.setAttribute('fill', 'none');
+                          hitboxPath.setAttribute('pointer-events', 'stroke');
+                          hitboxPath.appendChild(title);
+
+                          visiblePath.setAttribute('d', pathData);
+                          visiblePath.setAttribute('stroke', arrowColor);
+                          visiblePath.setAttribute('stroke-width', 2);
+                          visiblePath.setAttribute('fill', 'none');
+                          visiblePath.setAttribute('marker-end', `url(#${markerId})`);
+                          
+                          g.appendChild(visiblePath);
+                          g.appendChild(hitboxPath);
+                          svg.appendChild(g);
+                    }
+                }
+            }
+        }
+
+
+        /**
+         * フロー内の全てのSwitchアクションに対して、ケース内矢印の描画を指示する
+         */
+        function drawAllSwitchCaseArrows(actions, containerId, uniqueIdSuffix) {
+            if (!actions) return;
+            Object.keys(actions).forEach(key => {
+                const action = actions[key];
+                if (action.type === 'Switch') {
+                    drawCaseArrows(action, containerId, uniqueIdSuffix);
+                }
+                if (action.actions) drawAllSwitchCaseArrows(action.actions, containerId, uniqueIdSuffix);
+                if (action.else?.actions) drawAllSwitchCaseArrows(action.else.actions, containerId, uniqueIdSuffix);
+                if (action.cases) {
+                    Object.values(action.cases).forEach(c => drawAllSwitchCaseArrows(c.actions, containerId, uniqueIdSuffix));
+                }
+                if (action.default?.actions) drawAllSwitchCaseArrows(action.default.actions, containerId, uniqueIdSuffix);
+            });
+        }
+        
+        /**
+         * フロー内の全てのIFアクションに対して、ブランチ内矢印の描画を指示する
+         */
+        function drawAllIfBranchArrows(actions, containerId, uniqueIdSuffix) {
+            if (!actions) return;
+            Object.keys(actions).forEach(key => {
+                const action = actions[key];
+                if (action.type === 'If') {
+                    drawIfBranchArrows(action, containerId, uniqueIdSuffix);
+                }
+                // 再帰的に探索
+                if (action.actions) drawAllIfBranchArrows(action.actions, containerId, uniqueIdSuffix);
+                if (action.else?.actions) drawAllIfBranchArrows(action.else.actions, containerId, uniqueIdSuffix);
+                if (action.cases) {
+                    Object.values(action.cases).forEach(c => drawAllIfBranchArrows(c.actions, containerId, uniqueIdSuffix));
+                }
+                if (action.default?.actions) drawAllIfBranchArrows(action.default.actions, containerId, uniqueIdSuffix);
+            });
+        }
+
+        /**
+         * フロー内の全てのUntil/Foreachアクションに対して、内部矢印の描画を指示するヘルパー関数
+         */
+        function drawAllLoopArrows(actions, containerId, uniqueIdSuffix) {
+            if (!actions) return;
+            Object.keys(actions).forEach(key => {
+                const action = actions[key];
+                if (action.type === 'Until' || action.type === 'Foreach') {
+                    drawLoopArrows(action, containerId, uniqueIdSuffix);
+                }
+                // 再帰的に探索
+                if (action.actions) drawAllLoopArrows(action.actions, containerId, uniqueIdSuffix);
+                if (action.else?.actions) drawAllLoopArrows(action.else.actions, containerId, uniqueIdSuffix);
+                if (action.cases) {
+                    Object.values(action.cases).forEach(c => drawAllLoopArrows(c.actions, containerId, uniqueIdSuffix));
+                }
+                if (action.default?.actions) drawAllLoopArrows(action.default.actions, containerId, uniqueIdSuffix);
+            });
+        }
+
+// ★ステップ2: 関数定義を変更し、矢印データをグローバルに保存
+        function generateCloudFlowChart(actions, definition, panelId, containerId) {
+            console.log('🎨 Generating new cloud flowchart for:', panelId);
+            
+            // ★変更: 引数からIDを受け取る (uniqueIdSuffixはpanelIdで代用)
+            const uniqueIdSuffix = panelId;
+            // containerId は引数で渡されたものを使用
+            
+            let triggerHtml = '';
+            let firstActionKey = null;
+
+            if (definition && definition.triggers) {
+                const triggerKeys = Object.keys(definition.triggers);
+                if (triggerKeys.length > 0) {
+                    const triggerKey = triggerKeys[0];
+                    const trigger = definition.triggers[triggerKey];
+                    const triggerType = trigger.kind || trigger.type || 'Trigger';
+                    const icon = `<span class="icon">${ICONS[triggerType] || ICONS['Request']}</span>`;
+                    const elementId = sanitizeForId(triggerKey, uniqueIdSuffix);
+                    
+                    triggerHtml = `<div class="level-container">
+                                        <div id="${elementId}" class="step step-trigger">
+                                            ${icon}${triggerKey}<br><small>${triggerType}</small>
+                                        </div>
+                                   </div>`;
+                    firstActionKey = triggerKey;
+                }
+            }
+
+            const flow = buildFlowchartHtml(actions, uniqueIdSuffix);
+            const allActionsFlat = flattenActions(actions);
+            const rewiredRunAfters = {};
+            
+            rewireSuccessorsForContainers(actions, allActionsFlat, flow.successors, rewiredRunAfters);
+
+            if (firstActionKey) {
+                const initialActions = Object.keys(actions).filter(key => !actions[key].runAfter || Object.keys(actions[key].runAfter).length === 0);
+                if (initialActions.length > 0) {
+                    flow.successors[firstActionKey] = initialActions;
+                }
+            }
+
+            // ★変更: ページ読み込み時の描画 (setTimeout) を削除
+
+            let flowchartHtml = `<div class="flowchart">
+                <div id="${containerId}" class="cloud-flowchart-container">
+                    <svg class="arrow-canvas"></svg>
+                    <svg class="arrow-canvas-switch"></svg> 
+                    <div class="actions-wrapper">
+                        ${triggerHtml}
+                        ${flow.html}
+                    </div>
+                </div>
+            </div>`;
+
+            flowchartHtml += `<div class="debug-info">
+                <strong>🔍 デバッグ情報:</strong><br>
+                アクション数: ${Object.keys(actions || {}).length}<br>
+                トリガー数: ${Object.keys(definition.triggers || {}).length}<br>
+                <br><strong>📄 Actions構造:</strong><br>
+                <pre>${JSON.stringify(actions, null, 2)}</pre>
+            </div>`;
+
+            // ★追加: 矢印描画用のデータをグローバルストアに保存
+            // (toggleFlowPanel 関数から参照できるようにする)
+            window.flowChartData = window.flowChartData || {};
+            window.flowChartData[containerId] = {
+                successors: flow.successors,
+                allActionsFlat: allActionsFlat,
+                rewiredRunAfters: rewiredRunAfters,
+                actions: actions,
+                uniqueIdSuffix: uniqueIdSuffix
+            };
+
+            return flowchartHtml;
+        }
+        
+        // ★★★★★★★★★★
+        // ★ 構文エラーを修正し、デスクトップフローの解析ロジック全体を再構築しました ★
+        // ★★★★★★★★★★
+        function generateDesktopFlowChart(definition) {
+            //698行目で引き渡されたコードの中身（generateCloudFlowChart）そしてデータに(definition(699行目))を持ってくる
+            //console.log('🎨 デスクトップフローチャートを生成中');//ログ格納
+
+            flowchartHtml = '<div class="flowchart">';
+            flowchartHtml += `<h4><i class="fa-solid fa-layer-group"></i> Main:</h4>`;
+            //flowchart(115行目フローチャート表示画面)を変数flowchrtに格納
+
+            //★トリガー設定
+            flowchartHtml += `<div class="step step-trigger">`;
+            //div class="step(124行目)の中にstep-trigger(136行目)をflowchartHtmlを追加
+            flowchartHtml += `🖥️ デスクトップフロー開始`;
+            //箱の中にデスクトップフロー開始を表示
+            flowchartHtml += `</div>`;
+            flowchartHtml += '<div class="arrow-container">'
+            flowchartHtml += `<span class="arrow">↓</span>`;
+            flowchartHtml += `</div>`;
+            
+            //箱を閉じる
+
+            const lines = definition.split(/\\r?\\n/);
+            const escape = (text) => text.replace(/"/g, '#quot;').replace(/'/g, '#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            //console.log('【lines】',lines);
+            // 開始ノードを定義フローチャート実施
+            let blockDatetable = []
+            let BlockCount = 0;
+            let IfCount = 0;
+            let ElseCount = 0;
+            let BlockEndFlg = false;
+            let CommandPart = '';
+            let IfLoopFlg = false;
+            let subflowName ='';
+            let parts = '';
+            let BlockIconName = '';
+            let SpecialList = [];
+            let SpecialListWord = '';
+            let NextLineCheck = false;
+            let SwitchCode = '';
+            let SwitchCaseCount =0;
+            let match='';
+            let Left = '';
+            let Right = '';
+            let ArrowCount =0;
+            let divCount =0;
+            let EndFlg ='True';
+            let FunctionCount =0;
+            let ONERRORCount =0;
+            let FileName ='';
+            let PathName='';
+            let Key='';
+            let charList = [
+                'ELSE',
+                'ELSE IF',
+                'Logging',
+                'External',
+                'PowerAutomateSecretVariables',
+                'SAP',
+                'Compression',
+                'Variables',
+                'SET',
+                'CALL',
+                'EXIT',
+                'ERROR',
+                'WAIT',
+                'GOTO',
+                'System',
+                'Workstation',
+                'Scripting',
+                'cripting',
+                'File',
+                'Folder',
+                'UIAutomation',
+                'WebAutomation',
+                'WorkQueues',
+                'Excel',
+                'Word',
+                'Database',
+                'Email',
+                'Exchange',
+                'Outlook',
+                'Display',
+                'MouseAndKeyboard',
+                'Clipboard',
+                'Text',
+                'DateTime',
+                'Pdf',
+                'Cmd',
+                'TerminalEmulation',
+                'Cryptography',
+                'Services',
+                'XML',
+                'FTP',
+                'CyberArk',
+                'ActiveDirectory',
+                'AWS',
+                'Azure',
+                'GoogleCognitive',
+                'IBMCognitive',
+                'MicrosoftCognitive',
+                'SAP',
+                'External',
+                'END', 
+                'FUNCTION',
+                'ON ERROR',
+                '**ENDREGION',
+                '**REGION',
+                'IF',
+                'BLOCK',
+                'SWITCH',
+                'LOOP',
+                'THROW ERROR',
+                'ON BLOCK ERROR',
+            ];
+            let conversionMap = {
+                'Compression.ZipFiles':'Zipファイル',
+                'Compression.UnzipFiles':'ファイルの解凍',
+                'Variables.TruncateNumber.GetIntegerPart':'数値の切り捨て',
+                'Variables.GenerateRandomNumber.RandomNumber':'乱数の生成',
+                'Variables.ClearList':'リストのクリア',
+                'Variables.RemoveItemFromList.RemoveItemFromListByIndex':'リストから項目を削除',
+                'Variables.SortList.SortList':'一覧の並び替え',
+                'Variables.ShuffleList':'リストのシャッフル',
+                'Variables.MergeLists':'リストの結合',
+                'Variables.ReverseList':'リストを逆にする',
+                'Variables.RemoveDuplicateItemsFromList':'リストから重複する項目を削除',
+                'Variables.FindCommonListItems':'共通リスト項目の検索',
+                'Variables.SubtractLists':'リストの内容を減らす',
+                'Variables.ConvertJsonToCustomObject':'JSONをカスタムオブジェクトに変換',
+                'Variables.ConvertCustomObjectToJson':'カスタムオブジェクトをJSONに変換',
+                'Variables.ConvertCustomObjectToJson':'項目をリストに追加',
+                'Variables.RetrieveDataTableColumnIntoList':'データテーブル列をリストに取得',
+                'Variables.CreateNewList':'新しいリストの作成',
+                'Variables.AddItemToList':'項目をリストに追加',
+                'SET':'変数の設定',
+                'Variables.IncreaseVariable':'変数を大きくする',
+                'Variables.DecreaseVariable':'変数を小さくする',
+                '#':'コメント',
+                'CALL':'サブフローの実行',
+                'EXIT':'サブフローの終了',
+                'LABEL':'ラベル',
+                'ERROR => LastError':'最期のエラーを取得',
+                'WAIT':'待機',
+                'GOTO':'移動先',
+                'WAIT (System.WaitForProcess.ProcessToStart':'プロセスを待機する',
+                'System.RunApplication.RunApplication':'アプリケーションの実行',
+                'System.TerminateProcess.TerminateProcessByName':'プロセスを終了する',
+                'System.Ping':'Ping',
+                'System.SetEnvironmentVariable':'Windowsの環境変数を設定する',
+                'System.GetEnvironmentVariable.GetEnvironmentVariable':'Windowsの環境変数を取得',
+                'System.DeleteEnvironmentVariable':'Windows環境変数を削除する',
+                'Workstation.PrintDocument':'ドキュメントの印刷',
+                'Workstation.GetDefaultPrinter':'既定のプリンターを取得',
+                'Workstation.SetDefaultPrinter':'既定のプリンターを設定',
+                'Workstation.ShowDesktop':'デスクトップを表示',
+                'Workstation.LockWorkstation':'ワークステーションをロック',
+                'Workstation.PlaySound.PlaySystemSound':'サウンドの再生',
+                'Workstation.EmptyRecycleBin':'ゴミ箱を空にする',
+                'Workstation.TakeScreenshot.TakeScreenshot':'スクリーンショットの取得',
+                'Workstation.ControlScreenSaver':'スクリーンセイバーの制御',
+                'Workstation.GetScreenResolution':'画面の解像度を取得',
+                'Workstation.SetScreenResolution':'画面の解像度を設定',
+                'External.ShutdownComputer.Shutdown':'コンピューターをシャットダウン',
+                'External.LogOffUser':'ユーザーをログオフ',
+                'Scripting.RunDOSCommand.RunDOSCommand':'DOSコマンドの実行',
+                'Scripting.RunVBScript.RunVBScript':'VBScriptの実行',
+                'Scripting.RunJavascript.RunJavascript':'JavaScriptの実行',
+                'cripting.RunPowershellScript.RunPowershellScript':'PowerShellスクリプトの実行',
+                'Scripting.RunPythonScript':'Python スクリプトの実行',
+                'Scripting.RunDotNetScript':'.NETスクリプトの実行',
+                'WAIT (File.WaitForFile.Created':'ファイルを待機します',
+                'File.Copy':'ファイルをコピー',
+                'File.Move':'ファイルの移動',
+                'File.Delete':'ファイルの削除',
+                'File.RenameFiles.Rename':'ファイルの名前を変更する',
+                'File.ReadTextFromFile.ReadText':'ファイルからテキストを読み取る',
+                'File.WriteText':'テキストをファイルに書き込む',
+                'File.ReadFromCSVFile.ReadCSV':'CSVファイルから読み取る',
+                'File.WriteToCSVFile.WriteCSV':'CSVファイルに書き込む',
+                'File.GetPathPart':'ファイルパス部分を取得',
+                'File.GetTempPath':'一時ファイルの取得',
+                'File.ConvertToBase64':'ファイルをBase64に変換する',
+                'File.ConvertFromBase64':'Base64をファイルに変換する',
+                'File.ConvertToBinary':'ファイルをバイナリデータに変換',
+                'File.ConvertFromBinary':'バイナリデータをファイルに変換',
+                'Folder.GetSubfolders':'フォルダー内のサブフォルダーを取得',
+                'Folder.GetFiles':'フォルダー内のファイルを取得',
+                'Folder.Create':'フォルダーの作成',
+                'Folder.Delete':'フォルダーの削除',
+                'Folder.Empty':'フォルダーを空にする',
+                'Folder.Copy':'フォルダーをコピー',
+                'Folder.Move':'フォルダーを移動',
+                'Folder.Rename':'フォルダーの名前を変更',
+                'Folder.GetSpecialFolder':'特別なフォルダーを取得',
+                'UIAutomation.GetWindow.GetUseTimeout':'ウィンドウの取得',
+                'UIAutomation.FocusWindow.Focus':'ウィンドウにフォーカスする',
+                'UIAutomation.SetWindowState.SetState':'ウィンドウの状態の設定',
+                'UIAutomation.SetWindowVisibility.SetVisibility':'ウィンドウの表示方法を設定する',
+                'UIAutomation.MoveWindow.Move':'ウィンドウの移動',
+                'UIAutomation.ResizeWindow.Resize':'ウィンドウのサイズ変更',
+                '"UIAutomation.CloseWindow.Close':'ウィンドウを閉じる',
+                '#':'コメント',
+                'UIAutomation.GetWindowDetails':'ウィンドウの詳細を取得する',
+                'UIAutomation.GetElementDetails':'ウィンドウにあるUI要素を取得する',
+                'UIAutomation.GetSelectedCheckboxesInWindow.GetSelectedCheckboxes':'ウィンドウにあるUI要素を取得する選択済みチェックボックスを取得する',
+                'UIAutomation.GetSelectedRadiobuttonInWindow.GetSelectedRadiobutton':'ウィンドウにある選択済みラジオボタンを取得する',
+                'UIAutomation.ExtractDataFromWindow.ExtractDataInExcelSpreadsheet':'ウィンドウからデータを抽出する',
+                'UIAutomation.TakeScreenshotOfUIElement.TakeScreenshotOfUIElement':'UI要素のスクリーンショットを取得する',
+                'WAIT (UIAutomation.WaitForWindowContent.WindowToContainElement':'ウィンドウコンテンツを待機',
+                'WAIT (UIAutomation.WaitForRemoteDesktop Mode: UIAutomation.CheckRemoteDesktopAvailabilityMode.IsAvailable':'仮想デスクトップを待機する',
+                'UIAutomation.UseDesktop':'デスクトップを使用する',
+                'UIAutomation.SelectTab':'ウィンドウでタブを選択',
+                'WAIT (UIAutomation.WaitForImage.ToAppearOnScreen':'画像を待機',
+                'UIAutomation.HoverOnElement':'ウィンドウのUi要素の上にマウスぽいんだーを移動する',
+                'UIAutomation.Click.Click':'ウィンドウのUi要素クリック',
+                'UIAutomation.SelectMenuOption':'ウィンドウ内のメニューオプションを選択',
+                'UIAutomation.DragAndDropElement':'Ui要素のウィンドウ内にドラッグアンドドロップ',
+                'UIAutomation.ExpandCollapseTreeNode':'ウィンドウ内のツリーノードを展開/折りたたむ',
+                'WAIT (UIAutomation.WaitForWindow.ToOpen':'ウィンドウを待機する',
+                'WebAutomation.LaunchChrome.LaunchChrome':'新しいChromeを起動する',
+                'WebAutomation.LaunchFirefox.LaunchFirefox':'新しいFirefoxを起動する',
+                'WebAutomation.LaunchInternetExplorer.LaunchAutomationBrowser':'新しいInternetExplorerを起動',
+                'WebAutomation.LaunchEdge.LaunchEdge':'新しいMicrosoftEdgeを起動',
+                'WAIT (WebAutomation.WaitForWebPageContent.WebPageToContainElement':'Webページのコンテンツを待機',
+                'WebAutomation.CreateNewTab.CreateNewTab':'新しいタブを作成',
+                'WebAutomation.GoToWebPage.GoToWebPage':'Webページに移動',
+                'WebAutomation.Click.Click':'Webページのリンクをクリック',
+                'WebAutomation.ClickDownloadLink':'Webページのダウンロードリンクをクリック',
+                'WebAutomation.ExecuteJavascript':'WebページのJavaScript関数を実行',
+                'WebAutomation.HoverOverElement':'Webページの要素にマウスをポイント',
+                'WebAutomation.CloseWebBrowser':'Webブラウザーを閉じる',
+                'WebAutomation.GetDetailsOfWebPage':'Webページ上の詳細を取得します',
+                'WebAutomation.GetDetailsOfElement':'Webページ上の要素の詳細を取得します',
+                'WebAutomation.TakeScreenshot.TakeScreenshot':'Webページのスクリーンショットを取得します',
+                'WorkQueues.UpdateWorkQueueItem.UpdateWithProcessingNotes':'作業キュー項目を更新する',
+                'WorkQueues.EnqueueWorkQueueItem.WithoutUniqueId':'作業キュー項目を追加する',
+                'WorkQueues.BatchEnqueueWorkQueueItems':'複数の作業キュー項目を追加する',
+                'WorkQueues.RequeueWorkQueueItem.RequeueWithProcessingNotes':'遅延した項目を最キューする',
+                'WorkQueues.UpdateProcessingNotes.WithProcessingNotes':'作業キュー項目の処理中のメモを更新する',
+                'WorkQueues.GetWorkQueueItems':'フィルターで作業キュー項目を取得する',
+                'Excel.LaunchExcel.LaunchUnderExistingProcess':'Excelの起動',
+                'Excel.Attach':'実行中のExcelに添付',
+                'Excel.ReadFromExcel.ReadCell':'Excelワークシートから読み取る',
+                'Excel.GetActiveCell':'Excelワークシート内のアクティブなセルを取得',
+                'Excel.SaveExcel.Save':'Excel保存',
+                'Excel.CloseExcel.Close':'Excelを閉じる',
+                'Excel.SetActiveWorksheet.ActivateWorksheetByName':'アクティブなExcelワークシートの設定',
+                'Excel.AddWorksheet':'新しいワークシートの追加',
+                'Excel.GetColumnName':'Excelワークシートの列名を取得する',
+                'Excel.ClearCellsFromExcel.ClearCells':'Excelワークシートのセルをクリアする',
+                'Excel.FilterCellsFromExcel.FilterSimpleWorksheet':'Excelワークシートのセルをフィルター処理する',
+                'Excel.ClearFilterFromExcel.ClearFilterWorksheet':'Excelワークシートのフィルターをクリアする',
+                'Excel.GetEmptyCellFromExcel.GetEmptyCellsNamedCellFirstEmptyCell':'空のセルを取得',
+                'Word.LaunchWord.Launch':'Wordを起動する',
+                'Word.Attach':'実行中のWordに接続する',
+                'Word.SaveWord.Save':'Wordを保存',
+                'Word.CloseWord.Close':'Wordを閉じる',
+                'Word.ReadFromWord.Read':'Word文章から読み取る',
+                'Word.WriteToWord.WriteStartOfDocument':'Word文章に書き込む',
+                'Word.InsertImageToWord.InsertImageDocumentStartFromFile':'Word文章に画像を挿入する',
+                'Word.FindAndReplaceWord.FindAndReplaceSingle':'Word文書内の単語を検索して置換する',
+                'Database.Connect':'SQL接続を開く',
+                'Database.ExecuteSqlStatement.Execute':'SQLステートメントの実行',
+                'Database.Close':'SQL接続を閉じる',
+                'Access.LaunchAccess.LaunchExistingDbInAutomationMode':'Accessを起動する',
+                'Access.ReadAccessTable':'Accessテーブルを読み取ります',
+                'Access.RunAccessQuery.RunAccessSelectQuery':'Accessクエリを実行します',
+                'Access.RunAccessMacro.RunAccessMacro':'Accessマクロを実行します',
+                'Access.CloseAccess':'Accessを閉じる',
+                'Email.RetrieveEmails.Retrieve':'メールメッセージの取得',
+                'Email.ProcessEmails.Move':'メールメッセージの処理',
+                'Email.SendEmail.Send':'メールの送信',
+                'Exchange.ConnectToExchangeServer.Connect':'ExchangeServerに接続',
+                'Exchange.RetrieveExchangeMessages.RetrieveEmails':'Exchangeメールメッセージを取得',
+                'Exchange.SendMessage':'Exchangeメールメッセージを送信',
+                'Exchange.ProcessExchangeMessages.MoveEmails':'Exchangeメールメッセージを処理',
+                'Outlook.Launch':'Outlookを起動します',
+                'Outlook.RetrieveEmailMessages.RetrieveEmails':'Outlookからメールメッセージを取得',
+                'Outlook.SendEmailThroughOutlook.SendEmail':'Outlookからのメールメッセージの送信',
+                'Outlook.ProcessEmailMessages.MoveEmails':'Outlookからメールメッセージを処理',
+                'Outlook.SaveOutlookEmailMessages.SaveEmails':'Outlookメールメッセージを保存',
+                'Outlook.Close':'Outlookを閉じます',
+                'Display.ShowMessageDialog.ShowMessage':'メッセージを表示',
+                'Display.InputDialog':'入力ダイアログを表示',
+                'Display.SelectDateDialog.SelectDate':'日付の選択ダイアログを表示',
+                'Display.SelectFromListDialog.SelectFromList':'リストから選択ダイアログを表示',
+                'Display.SelectFileDialog.SelectFile':'ファイルの選択ダイアログを表示',
+                'Display.SelectFolder':'フォルダーの選択ダイアログを表示',
+                'Display.ShowCustomDialog':'カスタムフォームを表示',
+                'MouseAndKeyboard.BlockInput':'入力のブロック',
+                'MouseAndKeyboard.GetMousePosition':'マウスの位置を取得します',
+                'MouseAndKeyboard.MoveMouse':'マウスの移動',
+                'MouseAndKeyboard.MoveMouseToImage.MoveMouseToImage':'マウスを画像に移動',
+                'MouseAndKeyboard.MoveMouseToTextOnScreenWithOCR.WaitForTextToAppearAndMoveMouseToTextOnScreenWithWindowsOcr ':'画面上のテキストにマウスを移動する（OCR）',
+                'MouseAndKeyboard.SendMouseClick.Click':'マウスクリックの送信',
+                'MouseAndKeyboard.SendKeys.FocusAndSendKeys':'キーの送信',
+                'MouseAndKeyboard.PressReleaseKey.PressKey':'キーを押す/離す',
+                'MouseAndKeyboard.SetKeyState':'キーの状態を設定',
+                'WAIT (MouseAndKeyboard.WaitForMouse.WaitForMouseToBecome':'マウスを待機する',
+                'MouseAndKeyboard.GetKeyboardLayout':'キーボード識別子を取得する',
+                'MouseAndKeyboard.WaitForShortcutKey.WaitForShortcutKey':'ショートカットキーを待機',
+                'Clipboard.GetText':'クリップボードテキストを取得',
+                'Clipboard.SetText':'クリップボードテキストを設定',
+                'Clipboard.Clear':'クリップボードの内容をクリア',
+                'Text.AppendLine':'テキストに行を追加',
+                'Text.GetSubtext.GetSubtext':'サブテキストの取得',
+                'Text.Pad':'テキストをパディング',
+                'Text.CropText.CropTextBeforeFlag':'テキストを切り抜く',
+                'Text.Trim':'テキストを整える',
+                'Text.Reverse':'テキストを反転',
+                'Text.ChangeCase':'テキストの文字の大きさを変更',
+                'Text.ToNumber':'テキストを数値に変換',
+                'Text.FromNumber':'数値をテキストに変換',
+                'Text.ConvertTextToDateTime.ToDateTime':'テキスト値を日時の値に変換',
+                'Text.ConvertDateTimeToText.FromDateTime':'日時の値をテキストに変換',
+                'Text.Random':'ランダムテキストの作成',
+                'Text.JoinText.Join':'テキストの結合',
+                'Text.JoinText.Join':'テキストの分割',
+                'Text.ParseText.ParseForFirstOccurrence':'テキストの解析',
+                'Text.Replace':'テキストを置換する',
+                'Text.EscapeForRegularExpression':'正規表現のエスケープテキスト',
+                'Text.RecognizeEntitiesInText':'エンティティをテキストで認識する',
+                'Text.CreateHTMLContent':'HTMLコンテンツを作成',
+                'DateTime.Add':'加算する日時',
+                'DateTime.Subtract':'日付の減算',
+                'DateTime.GetCurrentDateTime.Local':'現在の日時を取得',
+                'Pdf.ExtractTextFromPDF.ExtractText':'PDFからテキストを抽出',
+                'Pdf.ExtractTablesFromPDF.ExtractTable':'PDEからテーブルを抽出する',
+                'Pdf.ExtractImagesFromPDF.ExtractImages':'PDFから画像を抽出',
+                'Pdf.ExtractPages':'新しいPDFファイルへのPDFファイルページの抽出',
+                'Pdf.MergeFiles':'PDFファイルを統合',
+                'Cmd.Open.Open':'CMDセッションを開く',
+                'Cmd.ReadFromCmdSession.Read':'CMDセッションから読み取る',
+                'Cmd.Write':'CMDセッションに書き込む',
+                'Cmd.WaitForText':'CMDセッションでテキストを待機',
+                'Cmd.Close':'CMDセッションを終了',
+                'TerminalEmulation.OpenTerminalSession.OpenSessionUsingReflectionProfile':'ターミナルセッションを開きます',
+                'TerminalEmulation.MoveCursor':'ターミナルセッションでカーソルを移動',
+                'TerminalEmulation.GetTextFromTerminalSession.GetTextFromFieldWithLabel':'ターミナルセッションからテキストを取得',
+                'TerminalEmulation.SetTextOnTerminalSession.SetTextOnFieldWithLabel':'ターミナルセッションにテキストを設定',
+                'TerminalEmulation.SendKey':'ターミナルセッションにキーを送信',
+                'TerminalEmulation.WaitForTextOnTerminalSession.WaitForTextOnScreen':'ターミナルセッションでテキストを待機',
+                'TerminalEmulation.FindTextFromTerminalSession':'ターミナルセッションのテキストを検索する',
+                'WAIT (OCR.WaitForTextOnScreen.TextOnScreenToAppearWithWindowsOcr':'テキストが画面に表示されるまで待機（OCR）',
+                'IF (OCR.IfTextOnScreen.TextOnScreenExistsWithWindowsOcr':'テキストが画面に表示される場合（OCR）',
+                'OCR.ExtractTextWithOCR.ExtractTextFromScreenWithWindowsOcr':'OCRを使ってテキストを抽出',
+                'Cryptography.EncryptText.EncryptTextWithAES':'AESでテキストを暗号化',
+                'Cryptography.DecryptText.DecryptTextWithAES':'AESでテキストを解読する',
+                'Cryptography.EncryptFromFile.EncryptFromFileWithAES':'AESでファイルから暗号化',
+                'Cryptography.DecryptToFile.DecryptToFileWithAES':'AESでファイルに解読する',
+                'Cryptography.HashText':'テキストをハッシュ化します',
+                'Cryptography.HashFromFile':'ファイルをハッシュ化します',
+                'Cryptography.HashTextWithKey':'キーを使ってテキストをハッシュ化',
+                'Cryptography.HashFromFileWithKey':'キーを使ってファイルをハッシュ化',
+                'WAIT (Services.WaitForService.Started':'サービスを待機',
+                'Services.Start':'サービスを開始',
+                'Services.Stop':'サービスを停止',
+                'Services.Pause':'サービスを一時停止',
+                'Services.Resume':'サービスを再開',
+                'XML.ReadFromFile':'ファイルからXMLを読み取る',
+                'XML.WriteXmlToFile.WriteToFileFormatted':'XMLをファイルに書き込む',
+                'XML.ExecuteXPathQuery.ExecuteXPath':'Xpath式を実行します',
+                'XML.GetXmlElementAttribute.GetElementAttribute':'XML要素の属性を取得',
+                'XML.SetElementAttribute':'XML要素の属性を設定',
+                'XML.RemoveElementAttribute':'XML要素の属性を削除',
+                'XML.GetXmlElementValue.GetElementValue':'XML要素の値を取得',
+                'XML.SetElementValue':'XML要素の値を設定',
+                'XML.InsertElement':'XML要素を挿入します',
+                'XML.RemoveElement':'XML要素を削除します',
+                'FTP.OpenConnection':'FTP接続を開く',
+                'FTP.ListDirectory':'FTPディレクトリの一覧表示',
+                'FTP.OpenSecureConnection.ConnectWithSftpUsernameAndPassword':'SecureFTP接続を開く',
+                'FTP.ChangeWorkingDirectory':'作業ディレクトリの変更',
+                'FTP.DownloadFiles':'FTPからファイルをダウンロード',
+                'FTP.DownloadFolders':'FTPからフォルダーをダウンロード',
+                'FTP.UploadFiles':'ファイルをFTPにアップロード',
+                'FTP.UploadFolders':'フォルダーをFTPにアップロード',
+                'FTP.DeleteFiles':'FTPファイルを削除',
+                'FTP.RenameFile':'FTPファイルの名前を変更する',
+                'FTP.DeleteDirectory':'FTPディレクトリを削除',
+                'FTP.InvokeCommand':'FTPコマンドで呼び出し',
+                'FTP.SynchronizeDirectory.SynchronizeDownloadAll':'ディレクトリの同期',
+                'CyberArk.GetPassword.GetPassword':'CyberArkからパスワードを取得',
+                'ActiveDirectory.ConnectToServer.ConnectToServer':'サーバーに接続',
+                'ActiveDirectory.CloseConnection':'接続を閉じる',
+                'ActiveDirectory.CreateObject':'オブジェクトの作成',
+                'ActiveDirectory.DeleteObject':'オブジェクトを削除',
+                'ActiveDirectory.MoveObject':'オブジェクトを移動',
+                'ActiveDirectory.RenameObject':'オブジェクトを名前変更',
+                'ActiveDirectory.CreateGroup':'グループの作成',
+                'ActiveDirectory.GetGroupMembers':'グループメンバーの取得',
+                'ActiveDirectory.ModifyGroup.RenameGroup':'グループの変更',
+                'ActiveDirectory.CreateUser':'ユーザーを作成',
+                'ActiveDirectory.GetUserInfo':'ユーザー情報を取得',
+                'ActiveDirectory.ModifyUser.DisableUser':'ユーザーを変更',
+                'ActiveDirectory.UnlockUser':'ユーザーをロック解除',
+                'ActiveDirectory.UpdateUserInfo':'ユーザー情報を更新',
+                'AWS.CreateEc2Session.CreateEc2SessionWithProfile':'EC2セッションを作成します',
+                'AWS.EndEC2Session':'EC2セッションを終了します',
+                'AWS.StartEC2Instance':'EC2インスタンスを開始します',
+                'AWS.StopEC2Instance':'EC2インスタンスを停止します',
+                'AWS.RebootEC2Instance':'EC2インスタンスを再起動します',
+                'AWS.GetAvailableEC2Instances':'使用可能なEC2インスタンスを取得します',
+                'AWS.DescribeEC2Instance':'インスタンスを記述します',
+                'AWS.CreateSnapshot':'スナップショットを作成します',
+                'AWS.DescribeSnapshots.DescribeAllSnapshots':'スナップショットを記述します',
+                'AWS.DeleteSnapshot':'スナップショットを削除します',
+                'Azure.CreateSession':'セッションを作成します',
+                'Azure.GetSubscriptions':'サブスクリプションを取得します',
+                'Azure.EndSession':'セッションを終了します',
+                'Azure.GetResourceGroups':'リソースグループを取得します',
+                'Azure.CreateResourceGroup':'リソースグループを作成します',
+                'Azure.DeleteResourceGroup':'リソースグループを削除します',
+                'Azure.GetSnapshots':'スナップショットを取得します',
+                'Azure.CreateSnapshot':'スナップショットを作成します',
+                'Azure.DeleteSnapshot':'スナップショットを削除します',
+                'Azure.GetDisks':'ディスクを取得します',
+                'Azure.AttachDisk':'ディスクをアタッチします',
+                'Azure.DetachDisk':'ディスクをデタッチします',
+                'Azure.CreateManagedDisk':'マネージドディスクを作成します',
+                'Azure.DeleteDisk':'ディスクを削除します',
+                'Azure.CreateSession':'セッションを作成します',
+                'Azure.GetSubscriptions':'サブスクリプションを取得します',
+                'Azure.EndSession':'セッションを終了します。',
+                'GoogleCognitive.LabelDetectionGoogle.LabelDetectionFromFile':'ラベル検出',
+                'GoogleCognitive.LandmarkDetectionGoogle.LandmarkDetectionFromFile':'ランドマーク検出',
+                'GoogleCognitive.TextDetectionGoogle.TextDetectionFromFile':'テキスト検出',
+                'GoogleCognitive.LogoDetectionGoogle.LogoDetectionFromFile':'ロゴ検出',
+                'GoogleCognitive.SafeSearchDetectionGoogle.SafeSearchDetectionFromFile':'セーフサーチ検出',
+                'GoogleCognitive.ImagePropertiesDetectionGoogle.ImagePropertiesDetectionFromFile':'画像のプロパティの検出',
+                'GoogleCognitive.AnalyzeSentimentGoogle.AnalyzeSentimentFromFile':'感情を分析します',
+                'GoogleCognitive.AnalyzeEntitiesGoogle.AnalyzeEntitiesFromFile':'エンティティ分析',
+                'GoogleCognitive.AnalyzeSyntaxGoogle.AnalyzeSyntaxFromFile':'構文を解析します',
+                'IBMCognitive.TranslateIBM.TranslateWithModelId':'翻訳',
+                'IBMCognitive.IdentifyLanguageIBM':'言語を特定します',
+                'IBMCognitive.AnalyzeToneIBM.AnalyzeFromText':'トーンを分析します',
+                'IBMCognitive.ConvertDocumentIBM.ConvertToAnswerUnits':'文章を変換します',
+                'IBMCognitive.ClassifyImageIBM.ClassifyImageFromFile':'画像を処理します',
+                'MicrosoftCognitive.SpellCheckMicrosoft':'SpellCheck',
+                'MicrosoftCognitive.AnalyzeImageMicrosoft.AnalyzeImageFromFile':'画像を分析します',
+                'MicrosoftCognitive.DescribeImageMicrosoft.DescribeImageFromFile':'画像を記述します',
+                'MicrosoftCognitive.OCRMicrosoft.OCRFromFile':'OCR',
+                'MicrosoftCognitive.TagImageMicrosoft.TagImageFromFile':'画像をタグ付けします',
+                'SAP.SapLogin.SapLogInOptionTerminate':'SAPを起動',
+                'SAP.CreateNewSession':'新しいSAPセッションを作成',
+                'SAP.SapSelectMenuItem':'SAPメニュー項目を選択',
+                'SAP.StartTransaction':'SAPトランザクションを開始',
+                'SAP.EndTransaction':'SAPトランザクションを終了する',
+                'SAP.CloseSapConnection':'SAP接続を閉じる',
+                'Testing.AssertValues':'アサート',
+                'External.SurfaceFlow':'デスクトップフローをテストする',
+                'THROW ERROR':'スローエラー',
+                'Text.SplitText.Split':'テキストの分割',
+                'Text.SplitText.SplitAtNumberOfCharacters':'テキストの分割',
+                'Excel.RunMacro':'Excelマクロの実行',
+                'Excel.GetActiveWorksheet':'アクティブなExcelワークシートの取得',
+                'Excel.GetAllWorksheets':'すべてのExcelワークシートの取得',
+                'Excel.DeleteWorksheet.DeleteWorksheetByName':'Excelワークシートを削除',
+                'Excel.DeleteWorksheet.DeleteWorksheetByIndex':'Excelワークシートを削除',
+                'Excel.RenameWorksheet.RenameWorksheetWithName':'Excelワークシートの名前を変更',
+                'Excel.RenameWorksheet.RenameWorksheetWithName':'Excelワークシートの名前を変更',
+                'Excel.CopyExcelWorksheet.CopyWorksheetWithName':'Excelワークシートコピー',
+                'Excel.CopyExcelWorksheet.CopyWorksheetWithIndex':'Excelワークシートをコピー',
+                'Excel.ActivateCellInExcel.ActivateCell':'Excelワークシート内のセルをアクティブ化',
+                'Excel.ActivateCellInExcel.ActivateCellRelativeTo':'Excelワークシート内のセルをアクティブ化',
+                'Excel.ActivateCellInExcel.ActivateNamedCell':'Excelワークシート内のセルをアクティブ化',
+                'Excel.SelectCellsFromExcel.SelectCellsRelativeTo':'Excelワークシートからセルをコピー',
+                'Excel.SelectCellsFromExcel.SelectCells':'Excelワークシートからセルをコピー',
+                'Excel.SelectCellsFromExcel.SelectNamedCell':'Excelワークシートからセルをコピー',
+                'Excel.CopyCellsFromExcel.CopyCell':'Excelワークシートからセルをコピー',
+                'Excel.CopyCellsFromExcel':'Excelワークシートにセルを貼り付け',
+                'Excel.DeleteCells.DeleteCell':'Excelワークシートから削除する',
+                'Excel.InsertRow':'Excel枠シートに行を挿入',
+                'Excel.DeleteRow':'Excelワークシートから行を削除',
+                'Excel.InsertColumn ':'Excelワークシートに列を挿入',
+                'Excel.DeleteColumn':'Excelワークシートから列を削除',
+                'Excel.FindAndReplace.FindSingle':'Excelワークシート内のセルを検索して置換する',
+                'Excel.FindAndReplace.FindAll':'Excelワークシート内のセルを検索して置換する',
+                'Excel.GetFirstFreeRowOnColumn':'Excelワークシートから列における最初の行を取得',
+                'Excel.ReadCellFormula.ReadFormulaFromCellCoordinates':'Excelから式を読み取る',
+                'Excel.ReadCellFormula.ReadFormulaFromNamedCell':'Excelから式を読み取る',
+                'Excel.GetTableRange':'テーブル範囲をExcelワークシートから取得する',
+                'Excel.GetTableRange ':'Excelワークシート内のセルを自動入力する',
+                'Excel.AutoFillCells.AutoFillNamedCells':'Excelワークシート内のセルを自動入力する',
+                'Excel.AppendCells.AppendCellsActiveSheetColumn':'Excelワークシートのセルを追加',
+                'Excel.AppendCells.AppendCellsActiveSheetHeader':'Excelワークシートのセルを追加',
+                'Excel.LookupRange.LookupRangeNamedCellNonArray':'Excelワークシートの検索結果',
+                'Excel.LookupRange.LookupRangeCoordinatesArray':'Excelワークシートの検索結果',
+                'Excel.SetColor.SetColorSingleCellHex':'Excelワークシートのセルの色を設定する',
+                'Excel.SetColor.SetColorRangeHex':'Excelワークシートのセルの色を設定する',
+                'Excel.SetColor.SetColorNamedCellHex':'Excelワークシートのセルの色を設定する',
+                'Excel.WriteToExcel.Write':'Excelワークシートを書き込む',
+                'Excel.WriteToExcel.WriteNamedCell':'Excelワークシートを書き込む',
+                'Excel.SetActiveWorksheet.ActivateWorksheetByIndex':'アクティブなExcelワークシートの設定',
+                'Excel.ClearCellsFromExcel.ClearNamedCell':'Excelワークシートのセルをクリアする',
+                'Excel.SortCellsFromExcel.SortWorksheet':'Excelワークシート内のセルを並べ替える',
+                'Excel.SortCellsFromExcel.SortTable':'Excelワークシート内のセルを並べ替える',
+                'Excel.SortCellsFromExcel.SortRangeNamedCell':'Excelワークシート内のセルを並べ替える',
+                'Excel.FilterCellsFromExcel.FilterSimpleTable':'Excelワークシートのセルをフィルター処理する',
+                'Excel.FilterCellsFromExcel.FilterSimpleRangeNamedCell':'Excelワークシートのセルをフィルター処理する',
+                'Excel.ClearFilterFromExcel.ClearFilterTableSpecificColumn':'Excelワークシートのフィルターをクリアする'
+
+
+            }
+            //console.log('★lines',lines);
+            lines.forEach((line, index) => {
+                //console.log('①Line',line,'index',index,'flowchartHtml',flowchartHtml);
+                
+                
+                //console.log('blockDatetableDiv (文字列化)', JSON.stringify(blockDatetable));
+                // スキップしたい接頭辞（始まりの文字列）のリスト
+                const skipPrefixes = [
+                    '\"@@ConnectionString:' ,
+                    '@@Type',
+                    '@@DesktopType',
+                    '@@DisplayName',
+                    'IMPORT',
+                    '@SENSITIVE',
+                    '@INPUT',
+                    '@OUTPUT',
+                ];
+
+                //ブロック
+                const block = [
+                    'BLOCK',
+                ];
+
+                //ブロックアクションリスト
+                const BlockActionList = [
+                    'ON BLOCK ERROR',
+                    'CALL',
+                    'SET TO',
+                    'NEXT ACTION',
+                    'THROW ERROR',
+                ]
+
+                //Endアクションリスト
+                const EndActionList = [
+                    'IF',
+                    'Loop',
+                    'SWITCH',
+                ]
+                const flowchartLines = flowchartHtml.split('>');
+                //console.log('②【BlockCount】',BlockCount,'【BlockEndflg】',BlockEndFlg,'【flowchart配列（行単位）】', flowchartLines);
+
+                
+                // 行の先頭の不要な空白を削除し、charListのいずれかのキーワードで始まるかチェック
+                if (charList.some(keyword => line.trim().startsWith(keyword))) {
+
+                } else {
+                        // どのキーワードでも始まらない行なので、処理をスキップする
+                    return;
+                }
+
+                for (const Key of Object.keys(conversionMap)){
+                    if (line.includes(Key)){
+                        ActionName = conversionMap[Key];
+                        break;
+                    }else{
+                        ActionName = line;
+                    }
+                }
+
+                if (ActionName === "スローエラー") {
+                    return;    
+                }
+                
+                if (ActionName.includes("Text.ConvertDateTimeTo")) {
+                    const regex = /DateTime:\s*(.*?)\s+CustomFormat:\s*(\$'''(.*?)''')\s*Result=>\s*(.*)/;
+                    const match= ActionName.match(regex);
+                    if (match) {
+                    // 取得できた場合の処理
+                        const dateTimeValue = match[1]; // 1番目の (.*?)
+                        const customFormatValue = match[2]; // 2番目の (...)
+                        const customFormatInner = match[3]; // 3番目の (.*?)
+                        const resultValue = match[4]; // 4番目の (.*)
+                        ActionName = "日付の値をテキストに変換<br>【入力変数"+dateTimeValue+"】<br>【カスタム形式"+customFormatInner+"】<br>【出力変数"+resultValue+"】";
+                    }else{
+                        ActionName = "日付の値をテキストに変換";
+                    }
+
+                }
+
+                if (ActionName.includes("Variables.FilterDataTable")) {
+                    ActionName = "フィルターデータテーブル";
+                }
+
+                if (ActionName.includes("Text.ParseText.RegexParse")) {
+                    ActionName = "テキストの解析";
+                }
+
+                if (ActionName.includes("Text.SplitText.SplitWithDelimiter")) {
+                    ActionName = "テキストの分割";
+                }
+
+                if (ActionName.includes("Excel.WriteToExcel.WriteCell")) {
+                    ActionName = "Excelワークシートを書き込む";
+                }
+
+                if (ActionName.includes("WebAutomation.LaunchChrome.AttachToForegroundChrome")) {
+                    ActionName = "新しいChromeを起動する";
+                }
+
+                if (ActionName.includes("サブフローの実行")) {
+                    const linestring = line.trimStart();
+                    const parts = linestring.split(/\s+/);
+                    const flowparts = parts[1];
+                    ActionName = "サブフローの実行【サブフロー名："+flowparts+"】";
+                }
+
+                if (ActionName.includes("External.RunFlow")) {
+                    const flowIdRegex = /FlowId: '([^']+)'/; 
+                    const flowIdMatch = ActionName.match(flowIdRegex);
+                    const flowId = flowIdMatch ? flowIdMatch[1] : null;
+                    // --- 修正点 1: @データを「@」ごと、正しく配列で取得 ---
+                    // split('@') は信頼性が低いため、正規表現を使います。
+                    const atDataRegex = /(@[^@]+)/g;
+                    const atDataMatches = ActionName.match(atDataRegex);
+                    const atDataArray = atDataMatches ? atDataMatches.map(s => s.trim()) : [];
+                    
+                    // atDataArray はこういう配列になります:
+                    // [
+                    //   "@LastError=> LastError",
+                    //   "@C001デスクトップフローログ=> C001デスクトップフローログ",
+                    //   "@tableConfig: tableConfig", // (入力はおそらくコロン)
+                    //   ...
+                    // ]
+
+                    // --- 修正点 2: 欲しい「値」の部分だけを抽出 ---
+                    // (例: "LastError", "C001...", "tableConfig")
+                    const variableValues = atDataArray.map(item => {
+                        // "=>" (出力) または ":" (入力) のどちらかで分割し、
+                        // [1]（右側）を取得します。
+                        const parts = item.split(/=>|:/);
+                        
+                        if (parts.length > 1) {
+                            // parts[1] は " LastError" や " tableConfig" のようになっているので...
+                            return parts[1].trim(); // .trim() で前後の空白を削除
+                        }
+                        return null; // 万が一、区切り記号がなかった場合
+                    }).filter(Boolean); // nullや空文字になった要素を配列から取り除く
+                    
+                    // variableValues はこうなります:
+                    // ["LastError", "C001デスクトップフローログ", "tableConfig", ...]
+
+
+                    // --- 修正点 3: 最終的な文字列を組み立て ---
+                    // 抽出した値の配列を、"【" と "】" で囲み、カンマで連結します。
+                    const variablesString = "【変数：" + variableValues.join(", ") + "】";
+
+                    ActionName = "デスクトップフローの実行<br>【DesktopId：" + flowId + "】" +`<br>`+ variablesString;
+                }
+
+                if (line.trimStart().startsWith('@@')) {
+                    return;
+                }
+
+                //const ActionName = line
+                //BLOCKアイコン作成（※lineがBLOCKの場合）
+                if (skipPrefixes.some(prefix => line.trim().startsWith(prefix))) {
+                        return; // 条件に一致した場合、この回の処理を中断して次のループに進む
+                }
+
+                //最後の行（""）処理開始
+                flowchartHtml += `<br>`;
+                if (line === '\"') {
+                    if(EndFlg === 'True'){
+                        flowchartHtml += `<div class="end end-action">`;
+                        //div class="step(124行目)の中にstep-trigger(136行目)をflowchartHtmlを追加
+                        flowchartHtml += `終了`;
+                        //箱の中にデスクトップフロー開始を表示
+                        flowchartHtml += `</div>`;
+                    }
+                    EndFlg = 'False'
+                    return;
+                }
+
+                
+                //最後の行（""）処理終了
+
+                
+                //console.log('⓪-0',JSON.stringify(SpecialList));
+                //SubFlowアクション開始
+                if (line.trimStart().startsWith('FUNCTION')) {
+                    if(FunctionCount ===0){
+                        flowchartHtml += `<div class="end end-action">`;
+                        //div class="step(124行目)の中にstep-trigger(136行目)をflowchartHtmlを追加
+                        flowchartHtml += `終了`;
+                        //箱の中にデスクトップフロー開始を表示
+                        flowchartHtml += `</div>`; 
+                    }
+                    SpecialList.forEach((SpecialLists, index) => {
+                        
+                    //console.log('【index】',index,SpecialLists);
+                    });
+                    
+                    //サブフロー移行時にEndアクションがあった場合lineにEndが反映されないため〈/div〉を格納
+                    const parts = String(line).trim().split(/\s+/);
+                    const subflowName = parts[1] || null;
+                    flowchartHtml += `</div>`; 
+                    flowchartHtml += '<div class="flowchart">';
+                    flowchartHtml += `<h4><i class="fa-solid fa-layer-group"></i>${subflowName}:</h4>`;
+                    flowchartHtml += `<div class="step step-trigger">`;
+                    //div class="step(124行目)の中にstep-trigger(136行目)をflowchartHtmlを追加
+                    flowchartHtml += `🖥️ デスクトップフロー開始`;
+                    //箱の中にデスクトップフロー開始を表示
+                    flowchartHtml += `</div>`;
+                    flowchartHtml += '<div class="arrow-container">'
+                    flowchartHtml += `<span class="arrow">↓</span>`;
+                    flowchartHtml += `</div>`;
+                    
+                    divCount ++;
+                    EndFlg = 'False';
+                    ArrowCount =0;
+                    FunctionCount ++;
+                    return; 
+                }
+                
+                if (line.trimStart().toUpperCase() === 'END FUNCTION') {
+                    //flowchartHtml += `</div>`;
+                    //for (let i = 1; i < divCount; i++) {
+                        //flowchartHtml += `</div>`;
+                    //}
+
+                    
+                    
+                    flowchartHtml += `<div class="end end-action">`;
+                    //div class="step(124行目)の中にstep-trigger(136行目)をflowchartHtmlを追加
+                    flowchartHtml += `終了`;
+                    //箱の中にデスクトップフロー開始を表示
+                    flowchartHtml += `</div>`;
+                    SpecialList = [];
+                    EndFlg = 'False';
+                    return;
+                }
+                //SubFlowアクション終了
+
+                //console.log('⓪-1',JSON.stringify(SpecialList));
+
+                //IF処理開始
+                if (line.trimStart().startsWith("IF")) {
+                    SpecialList.push('IF');
+                    IfCount ++;
+                    IfLoopFlg = true;
+                }
+
+                if (line.trimStart().startsWith("BLOCK")) {
+                    SpecialList.push('BLOCK');
+                    BlockCount ++;
+                }
+
+                if (line.trimStart().startsWith("SWITCH")) {
+                    SpecialList.push('SWITCH');
+                }
+
+                if (line.trimStart().startsWith("LOOP")) {
+                    SpecialList.push('LOOP');
+                }
+
+                if (line.trimStart().startsWith("**REGION")) {
+                    SpecialList.push('REGION');
+                } 
+
+                if (line.trimStart().startsWith("ON ERROR")) {
+                    if(ONERRORCount ===0){
+                        SpecialList.push('ON ERROR');
+                    }
+                    ONERRORCount++;
+                } 
+
+                //console.log('⓪-2',JSON.stringify(SpecialList));
+
+                SpecialListWord = SpecialList[SpecialList.length - 1];
+                //console.log('⓪-3SpecialListWord',SpecialListWord);
+                if (SpecialListWord === 'IF') {
+                    console.log('⚙Line',line,index);
+                    if (line.trimStart().startsWith("IF")) {
+                        let IfCord = line
+                            .replace("IF ", "")    // 先頭の "IF " を削除
+                            .replace(" THEN", "")   // 末尾の " THEN" を削除
+                            .replaceAll("$'''", "")   // "$'''" をすべて削除
+                            .replaceAll("'''", "");   // "'''" も念のためすべて削除
+                            
+                        flowchartHtml += `<div class="if-box">`;
+                        if (IfCord === '(FlowControl.IfSafeStop ShouldStop: True)') {
+                            flowchartHtml += `<span style="background-color: white;">条件分岐:安全停止が要求済みかどうか</span>` ;
+                        }else if (IfCord === '(System.IfProcess.ProcessIsRunning ProcessName: ActiveConsole)') {
+                            flowchartHtml += `<span style="background-color: white;">条件分岐:プロセスが次の場合</span>` ;
+                        }else if (IfCord.includes('File.IfFile.Exists')) {
+                            FileName = IfCord.match(/File: (.*?)\)/)
+                            flowchartHtml += `<span style="background-color: white;">条件分岐:ファイル${FileName}が存在する場合</span>` ;
+                        }else if (IfCord.includes('Folder.IfFolderExists.Exists')) {
+                            PathName = IfCord.match(/Path: (.*?)\)/)
+                            flowchartHtml += `<span style="background-color: white;">条件分岐:フォルダパス${PathName}が存在する場合</span>` ;
+                        }else if (IfCord .includes('UIAutomation.IfWindowContains.WindowContainsElement')) {
+                            let startIndex = IfCord.indexOf('Element: ');
+                            let extractedText = IfCord.slice(startIndex);
+                            flowchartHtml += `<span style="background-color: white;">条件分岐:ウィンドウが次をふくむ場合</span>` ;
+                            flowchartHtml += `<br>`;
+                            flowchartHtml += `<span style="background-color: white;">Ui要素:${extractedText}</span>` ;
+                        }else if (IfCord .includes('UIAutomation.IfRemoteDesktopIsAvailable')) {
+                            let startIndex = IfCord.indexOf('Mode: ');
+                            let extractedText = IfCord.slice(startIndex);
+                            flowchartHtml += `<span style="background-color: white;">条件分岐:仮想デスクトップが使用可能な場合</span>` ;
+                            flowchartHtml += `<br>`;
+                            flowchartHtml += `<span style="background-color: white;">Ui要素:${extractedText}</span>` ;
+                        }else if (IfCord .includes('UIAutomation.IfImage.ExistsOnScreen')) {
+                            flowchartHtml += `<span style="background-color: white;">条件分岐:画像が存在する場合</span>` ;
+                        }else if (IfCord .includes('UIAutomation.IfWindow.IsOpen')) {
+                            let startIndex = IfCord.indexOf('appmask: ');
+                            let extractedText = IfCord.slice(startIndex);
+                            flowchartHtml += `<span style="background-color: white;">条件分岐:ウィンドウが次をふくむ場合次の条件を満たす場合</span>` ;
+                            flowchartHtml += `<br>`;
+                            flowchartHtml += `<span style="background-color: white;">Ui要素:${extractedText}</span>` ;
+                        }else if (IfCord .includes('WebAutomation.IfWebPageContains.WebPageContainsElement')) {
+                            let startIndex = IfCord.indexOf('BrowserInstance: ');
+                            let extractedText = IfCord.slice(startIndex);
+                            flowchartHtml += `<span style="background-color: white;">条件分岐:Webページに次が含まれる場合</span>` ;
+                            flowchartHtml += `<br>`;
+                            flowchartHtml += `<span style="background-color: white;">Ui要素:${extractedText}</span>` ;
+                        }else if (IfCord .includes('OCR.IfTextOnScreen.TextOnScreenExistsWithWindowsOcr')) {
+                            flowchartHtml += `<span style="background-color: white;">条件分岐:テキストが画面に表示される場合(OCR)</span>` ;
+                        }else{
+                            flowchartHtml += `<span style="background-color: white;">条件分岐${IfCord}</span>` ;
+                        }
+                        flowchartHtml += '<div class="branches">';
+                        flowchartHtml += '<div class="branch true-branch">';
+                        flowchartHtml += '<div class="editable-content" contenteditable="True">';
+                        IfCord ='';
+                        IfLoopFlg = false;
+                        ArrowCount =0;
+                        const NextLineCheck = false;
+                        return;
+                    }
+                    if (line.trimStart().startsWith("ELSE IF")) {
+                        flowchartHtml += '</div>';
+                        flowchartHtml += '</div>';
+                        flowchartHtml += '</div>';
+                        flowchartHtml += '<div class="branches">';
+                        flowchartHtml += '<div class="branch elseiF-branch">';
+                        flowchartHtml += '<div class="editable-content" contenteditable="elseif">';
+                        ElseCount ++;
+                        ArrowCount =0;
+                        return;
+                    }
+                    console.log('⚙LineElse',line);
+                    if (line.includes("ELSE")) {
+                        flowchartHtml += '</div>';
+                        flowchartHtml += '</div>';
+                        flowchartHtml += '</div>';
+                        flowchartHtml += '<div class="branches">';
+                        flowchartHtml += '<div class="branch false-branch">';
+                        flowchartHtml += '<div class="editable-content" contenteditable="False">';
+                        ElseCount ++;
+                        ArrowCount =0;
+                        return;
+                    }
+                    if (line.trimStart().startsWith('END')){
+                        flowchartHtml += '</div>';
+                        flowchartHtml += '</div>';
+                        flowchartHtml += '</div>';
+                        flowchartHtml += '</div>';
+                        flowchartHtml += '<div class="arrow-container">'
+                        flowchartHtml += `<span class="arrow">↓</span>`;
+                        flowchartHtml += `</div>`;
+                        ElseCount --;
+                        IfCount --;
+                        NextLineCheck = true;
+                        SpecialList.pop();
+                        ArrowCount =0;
+                        return;
+                    }else{
+                        flowchartHtml += `<div class="step step-action">`;
+                        flowchartHtml += `⚙️ アクション ${ActionName}`;
+                        flowchartHtml += `</div>`;
+                        ArrowCount ++;
+                        flowchartHtml += '<div class="arrow-container">'
+                        flowchartHtml += `<span class="arrow">↓</span>`;
+                        flowchartHtml += `</div>`;
+                        return; 
+                    } 
+                    
+                }
+                
+                if (SpecialListWord === 'LOOP') {
+                    if (line.trimStart().startsWith("LOOP")) {
+                        ArrowCount =0;
+                        flowchartHtml += '<div class="Loop-container">'
+                        let parts = line.split(' ');
+                        parts = parts.filter(item => item !== "");
+                        //console.log('★Parts',parts);
+                        if (parts.length > 1 && parts[1] === "FOREACH") {
+                            flowchartHtml += '<span class="Loop-label">それぞれに適応</span>'
+                            flowchartHtml += `<span style="background-color: white;">”${parts[4]}”を1行ずつ読み取り、全ての行を読み取るまでループ。（カレントアイテム:${parts[2]})</span>` ;
+                            flowchartHtml += `<br>`;
+                            flowchartHtml += '<div class="action-area">'
+                            flowchartHtml += '<div class="condition-box">'
+                            flowchartHtml += 'ループ内処理'
+                            flowchartHtml += '</div>'
+                            flowchartHtml += `<br>`;
+                            return;
+                        }else if (parts.length > 1 && parts[1] === "WHILE") {
+                            flowchartHtml += '<span class="Loop-label">ループ条件</span>'
+
+                            //作業キュー項目を処理する
+                            if(parts[2] === "(WorkQueues.ProcessWorkQueueItem.ProcessWorkQueueItem"){
+                                //console.log('★Parts2',parts);
+                                let matchForLeft = parts[4].match(/\$'''(.*?)'''/);
+                                Left = matchForLeft[1]
+                                let Right = parts[6].replace(")", "");
+                                flowchartHtml += `<span style="background-color: white;">作業キュー${Left}のキュー項目を処理し、${Right}に保存する</span>` ;
+                                flowchartHtml += `<br>`;
+                                flowchartHtml += '<div class="action-area">'
+                                flowchartHtml += '<div class="condition-box">'
+                                flowchartHtml += 'ループ内処理'
+                                flowchartHtml += '</div>'
+                                flowchartHtml += `<br>`;
+                                return;
+                            }
+
+                            let matchForLeft = parts[2].match(/^\(\$'''(.*)'''\)$/);
+                            if (matchForLeft !== null) {
+                                Left = matchForLeft[1]
+                            }else{
+                                matchForLeft = parts[2].match(/^\((.*)\)$/);
+                                Left = matchForLeft[1]
+                            }
+
+                            let matchForRight = parts[4].match(/^\(\$'''(.*)'''\)$/);
+                            if (matchForRight !== null) {
+                                Right = matchForRight[1]
+                            }else{
+                                matchForRight = parts[4].match(/^\((.*)\)$/);
+                                Right = matchForRight[1]
+                            }
+
+                            if (parts[7] === "="){
+                                //console.log('★Left2',Left);
+                                flowchartHtml += `<span style="background-color: white;">${Left}が${Right}と等しい場合ループ</span>` ;
+                                //console.log('★Left2',Left);
+                            }else if (parts[7] === "<>"){
+                                flowchartHtml += `<span style="background-color: white;">${Left}が${Right}と等しくない場合ループ</span>` ;
+                            }else if (parts[7] === ">"){
+                                flowchartHtml += `<span style="background-color: white;">${Left}が${Right}より大きい場合ループ</span>` ;
+                            }else if (parts[7] === "<"){
+                                flowchartHtml += `<span style="background-color: white;">${Left}が${Right}より小さい場合ループ</span>` ;
+                            }else if (parts[7] === "<="){
+                                flowchartHtml += `<span style="background-color: white;">${Left}が${Right}以下の場合ループ</span>` ;
+                            }else if (parts[7] === ">="){
+                                flowchartHtml += `<span style="background-color: white;">${Left}が${Right}以上の場合ループ</span>` ;
+                            }
+                            flowchartHtml += `<br>`;
+                            flowchartHtml += '<div class="action-area">'
+                            flowchartHtml += '<div class="condition-box">'
+                            flowchartHtml += 'ループ内処理'
+                            flowchartHtml += '</div>'
+                            flowchartHtml += `<br>`;
+                            return;
+                        }else {
+                            flowchartHtml += '<span class="Loop-label">ループ</span>'
+                            flowchartHtml += `<span style="background-color: white;">開始値:”${parts[3]}”、増分（1ループにつき）:”${parts[7]}”、終了:”${parts[5]}”。(カレントアイテム:${parts[1]})</span>` ;
+                            flowchartHtml += `<br>`;
+                            flowchartHtml += '<div class="action-area">'
+                            flowchartHtml += '<div class="condition-box">'
+                            flowchartHtml += 'ループ内処理'
+                            flowchartHtml += '</div>'
+                            flowchartHtml += `<br>`;
+                            return;
+                        } 
+                        ArrowCount =0;  
+                    }
+                    if (line.trim() === 'END') {
+                        flowchartHtml += '</div>'
+                        flowchartHtml += '</div>'
+                        flowchartHtml += '<div class="arrow-container">'
+                        flowchartHtml += `<span class="arrow">↓</span>`;
+                        flowchartHtml += `</div>`;
+                        SpecialList.pop();
+                        ArrowCount =0;
+                        return;
+                    }
+                    
+                    flowchartHtml += `<div class="step step-action">`;
+                    flowchartHtml += `⚙️ アクション ${ActionName}`;
+                    flowchartHtml += `</div>`;
+                    flowchartHtml += '<div class="arrow-container">'
+                    flowchartHtml += `<span class="arrow">↓</span>`;
+                    flowchartHtml += `</div>`;
+                    ArrowCount ++;
+                    return;
+
+                }
+
+
+                if (SpecialListWord === 'SWITCH') {
+                    if (line.trimStart().startsWith("SWITCH")) {
+                        const match = line.match(/SWITCH \$'''(.*?)'''/);
+                        const SwitchCode = match ? match[1] : null;
+                        flowchartHtml += '<div class="switch-container">'
+                        flowchartHtml += '<span class="switch-label">Switch</span>'
+                        flowchartHtml += `<span style="background-color: white;">Swich条件:${SwitchCode}</span>` ;
+                        flowchartHtml += `<br>`;
+                        flowchartHtml += '<div class="action-area">'
+                        flowchartHtml += '<div class="condition-box">'
+                        flowchartHtml += 'SWITCH'
+                        flowchartHtml += '</div>'
+                        flowchartHtml += `<br>`;
+                        ArrowCount =0;
+                        return; 
+                    }
+                    if (line.trimStart().startsWith("CASE")) {
+                        flowchartHtml += '</div>'
+                        SwitchCaseCount ++;
+                        flowchartHtml += '<div class="action-area">'
+                        flowchartHtml += '<div class="condition-box">'
+                        flowchartHtml += line
+                        flowchartHtml += '</div>'
+                        flowchartHtml += `<br>`;
+                        ArrowCount =0;
+                        return; 
+                    }
+                    if (line.trimStart().startsWith("DEFAULT")) {
+                        if(SwitchCaseCount >= 1){
+                            flowchartHtml += '</div>'
+                        }
+                        flowchartHtml += '<div class="action-area">'
+                        flowchartHtml += '<div class="condition-box">'
+                        flowchartHtml += line
+                        flowchartHtml += '</div>'
+                        flowchartHtml += `<br>`;
+                        ArrowCount =0;
+                        return; 
+                    }
+                    if (line.trim() === 'END') {
+                        flowchartHtml += '</div>'
+                        flowchartHtml += '</div>'
+                        flowchartHtml += '<div class="arrow-container">'
+                        flowchartHtml += `<span class="arrow">↓</span>`;
+                        flowchartHtml += `</div>`;
+                        SwitchCaseCount = 0;
+                        SpecialList.pop();
+                        ArrowCount =0;
+                        return;
+                    }
+                    
+                    flowchartHtml += `<div class="step step-action">`;
+                    flowchartHtml += `⚙️ アクション ${ActionName}`;
+                    flowchartHtml += `</div>`;
+                    flowchartHtml += '<div class="arrow-container">'
+                    flowchartHtml += `<span class="arrow">↓</span>`;
+                    flowchartHtml += `</div>`; 
+                    ArrowCount ++;
+                    return; 
+                }
+                
+                if (SpecialListWord === 'REGION') {
+                    if (line.trimStart().startsWith("**REGION")) {
+                        let parts = line.split(' ');
+                        parts = parts.filter(item => item !== "");
+                        let REGIONName = parts[1]
+                        //console.log('★parts',parts);
+                        flowchartHtml += `<div class="region-group-box">`;
+                        flowchartHtml += `<span class="region-box-message">Region_${REGIONName}</span>`;
+                        ArrowCount =0;
+                        return;
+                    }
+
+                    if (line.trim() === '**ENDREGION') {
+                        flowchartHtml += '</div>'
+                        flowchartHtml += '<div class="arrow-container">'
+                        flowchartHtml += `<span class="arrow">↓</span>`;
+                        flowchartHtml += `</div>`;
+                        SpecialList.pop();
+                        ArrowCount =0;
+                        return;
+                    }
+
+                    flowchartHtml += `<div class="step step-action">`;
+                    flowchartHtml += `⚙️ アクション ${ActionName}`;
+                    flowchartHtml += `</div>`;
+                    flowchartHtml += '<div class="arrow-container">'
+                    flowchartHtml += `<span class="arrow">↓</span>`;
+                    flowchartHtml += `</div>`;
+                    ArrowCount ++;
+                    return;
+                }
+
+                                  //★IfCountが0ではない場合（1以上の場合）
+                console.log('表示させたいログ','★index',index,'★line',line);                  //If処理終了
+                if (SpecialListWord === 'BLOCK') {
+                    //開始
+                    console.log('★BLOCKActionListA',index,'★line',line);
+                        //LineがBLOCKであればTrue
+                        //let BlockIconName = '';
+                        if (line.trim().startsWith("ON BLOCK ERROR")) {
+                            BlockEndFlg = true
+                            console.log('★BLOCKActionList',index,'★line',line);  
+                            return; // 条件に一致した場合、ここで処理を抜ける
+                            }else{
+                                console.log('★line（else）',line);
+                            }
+                
+                        //BlockEndFlgをfalse化。(lineがEndかつBlockEndFlgがtrueの場合)
+                        if (line.trim() === 'END' && BlockEndFlg) {
+                            BlockEndFlg = false;
+                            console.log('★ENDtrue',index,'★line',line); 
+                            return;
+                            }
+
+                        if (line.trim() === 'END' && BlockEndFlg === 'false') {
+                            BlockEndFlg = false;
+                            flowchartHtml += '</div>';
+                            console.log('★ENDfalse',index,'★line',line);
+                            return;
+                            }
+
+                        //console.log('★BLOCKIndex',index,'★line',line,'★line.trim()',line.trim());
+                        if (line.trim() === 'END') {
+                            if (BlockCount >= 2){
+                                flowchartHtml += '</div>';
+                                //console.log('②-1【BlockCount】',BlockCount,'【BlockEndflg】',BlockEndFlg,'【flowchart配列（行単位）】', flowchartLines);
+                                BlockCount --;
+                                SpecialList.pop();
+                                flowchartHtml += '<div class="arrow-container">'
+                                flowchartHtml += `<span class="arrow">↓</span>`;
+                                flowchartHtml += `</div>`;
+                                return;
+                            }
+                            flowchartHtml += '</div>';
+                            flowchartHtml += '<div class="arrow-container">'
+                            flowchartHtml += `<span class="arrow">↓</span>`;
+                            flowchartHtml += `</div>`;
+                            BlockCount --;
+                            SpecialList.pop();
+                            return;
+                        }
+
+                    //ブロックネーム作成
+                    if (line.trim().startsWith("BLOCK")){
+                        BlockIconName = 'ブロックエラー' + line.substring(5).trim();
+                        if (BlockIconName === ""){
+                            BlockIconName = "ブロックエラー";
+                        }
+                        flowchartHtml += `<div class="dotted-group-box">`;
+                        flowchartHtml += `<span class="group-box-message">${BlockIconName}</span>`;
+                        return;
+                    }
+
+                    if (ActionName) {
+                            //arrow(151行目)のルールをもとにで→（矢印）を編集してflowchartHtmlを追加
+                        flowchartHtml += `<div class="step step-action">`;
+                        flowchartHtml += `⚙️ アクション ${ActionName}`;
+                        flowchartHtml += `</div>`;
+                        flowchartHtml += '<div class="arrow-container">'
+                        flowchartHtml += `<span class="arrow">↓</span>`;
+                        flowchartHtml += `</div>`;
+                        ArrowCount ++;
+                        return;
+                        // ここで抽出した ActionName を使った処理を行う
+                    } else {
+                        return;
+                    }
+            
+                    
+            
+            
+                }
+
+                if (SpecialListWord === 'ON ERROR') {
+                    if (line.trim() === 'END') {
+                        SpecialList.pop();
+                        return;
+                        ONERRORCount =0;
+                    }
+                    return;
+                }
+                
+                if(ActionName === 'END'){
+                    return; 
+                }
+
+                flowchartHtml += `<div class="step step-action">`;
+                flowchartHtml += `⚙️ アクション ${ActionName}`;
+                flowchartHtml += `</div>`;
+                flowchartHtml += '<div class="arrow-container">'
+                flowchartHtml += `<span class="arrow">↓</span>`;
+                flowchartHtml += `</div>`;
+                ArrowCount ++;
+                return;
+            }
+            );
+            
+            //★flowchartHtml += '</div>';
+            //div class="step(124行目)の中にstep-action(141行目)をflowchartHtmlを閉じる
+            flowchartHtml += `</div>`;
+            flowchartHtml += `<div class="debug-info">`;//179行目の箱を開く
+            flowchartHtml += `<strong>🔍 デバッグ情報:</strong><br>`;
+            //<strong><strong>(太字)にデバッグ情報を格納
+            //flowchartHtml += `推定アクション数: ${actionCount}<br>`;
+            //推定アクション数actioncount(869行目)を入力
+            flowchartHtml += `Definition文字数: ${definition.length}<br>`;
+            //Definition文字数definition（825行目）を入力
+            flowchartHtml += `<br><strong>📄 Definition内容 (先頭1000文字):</strong><br>`;
+            //<strong><strong>(太字)にを格納efinition内容 (先頭1000文字)を格納
+            flowchartHtml += `<pre>${definition.substring(0, 1000)}${definition.length > 1000 ? '...' : ''}</pre>`;
+            //</pre></pre>成形済みテキストを表示Defition(825行目)を1000文字目{definition.substring(0, 1000)}まで格納。
+            //1000以上の場合{definition.length > 1000 ? '...' : ''}...を追加（'...'）違うなら空白を追加（''）
+            flowchartHtml += `</div>`;
+            
+            //★flowchartHtmlを1行ずつ配列型として読み取る
+            const flowchartLines = flowchartHtml.split('>');
+            //console.log('④【flowchart配列】', flowchartLines);
+            //console.log('⑤【配列の行数】', flowchartLines.length);
+            console.log('★lines',lines);
+            
+            // 各行を処理し、'＞'を追加
+            flowchartLines.forEach((line, index) => {
+                const lineWithArrow = line.trim() !== '' ? line + '＞' : line;
+                //console.log(`【行${index + 1}】`, lineWithArrow);
+            });
+            
+            return flowchartHtml;//上記の処理を終了してflowchartHtmlに返す
+        }
+    /* ===== ▼▼▼ ここから追加（ステップ3） ▼▼▼ ===== */
+/* ===== ▼▼▼ ステップ3：この関数に置き換え ▼▼▼ ===== */
+
+/**
+ * フローのパネルをクリックで開閉する関数 (★汎用化)
+ * @param {string} contentId - 表示/非表示を切り替えるコンテンツ要素のID
+ * @param {string} headerId - クリックされたヘッダー要素のID
+ */
+/* ===== ▼▼▼ ステップ3：この関数に置き換え ▼▼▼ ===== */
+
+/**
+ * フローのパネルをクリックで開閉する関数 (★矢印描画処理を追加)
+ * @param {string} contentId - 表示/非表示を切り替えるコンテンツ要素のID
+ * @param {string} headerId - クリックされたヘッダー要素のID
+ * @param {string | null} containerId - (オプション) クラウドフローのSVGコンテナID
+ */
+        function toggleFlowPanel(contentId, headerId, containerId = null) {
+            const content = document.getElementById(contentId);
+            const header = document.getElementById(headerId);
+            
+            if (!content || !header) {
+                console.error('折りたたみ要素が見つかりません:', contentId, headerId);
+                return;
+            }
+            
+            const badge = header.querySelector('.toggle-badge');
+
+            // 現在の表示状態をチェックして切り替える
+            if (content.style.display === 'block') {
+                // 閉じる処理
+                content.style.display = 'none';
+                header.classList.remove('active');
+                if (badge) {
+                    badge.textContent = '詳細を表示 ▼';
+                }
+            } else {
+                // 開く処理
+                content.style.display = 'block';
+                header.classList.add('active');
+                if (badge) {
+                    badge.textContent = '閉じる ▲';
+                }
+
+                // (★ここから矢印描画処理を追加★)
+                // containerId が渡されており、グローバルストアにデータが存在する場合
+                if (containerId && window.flowChartData && window.flowChartData[containerId]) {
+                    
+                    const container = document.getElementById(containerId);
+                    
+                    // まだ矢印が描画されていない場合のみ実行（初回オープン時のみ）
+                    if (container && !container.dataset.arrowsDrawn) {
+                        console.log('🎨 矢印を描画します:', containerId);
+                        const data = window.flowChartData[containerId];
+                        
+                        // 描画処理 (DOMのレンダリング完了を待つためにわずかに遅延)
+                        setTimeout(() => {
+                            try {
+                                drawArrows(data.successors, containerId, data.uniqueIdSuffix, data.allActionsFlat, data.rewiredRunAfters);
+                                drawAllSwitchCaseArrows(data.actions, containerId, data.uniqueIdSuffix);
+                                drawAllIfBranchArrows(data.actions, containerId, data.uniqueIdSuffix);
+                                drawAllLoopArrows(data.actions, containerId, data.uniqueIdSuffix);
+                                
+                                // 描画済みフラグを立て、二重描画を防ぐ
+                                container.dataset.arrowsDrawn = 'true';
+                            } catch (e) {
+                                console.error('❌ 矢印の描画中にエラーが発生しました:', e);
+                            }
+                        }, 100); 
+                    }
+                }
+                // (★ここまで追加★)
+            }
+        }
+        /**
+         * デスクトップフローのパネルをクリックで開閉する関数
+         * @param {string} contentId - 表示/非表示を切り替えるコンテンツ要素のID
+         * @param {string} headerId - クリックされたヘッダー要素のID
+         */
+        
+    </script>
+</body>
+</html>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(type \"C:\\Users\\OGURATakeo(小倉健生)\\pad_web_analyzer_js\\start.cmd\")",
+      "Bash(powershell -Command \"Get-Content ''C:\\Users\\OGURATakeo(小倉健生)\\pad_web_analyzer_js\\Untitled-2.html'' | Select-Object -Skip 807 -First 2224 > ''C:\\Users\\OGURATakeo(小倉健生)\\pad_web_analyzer_js\\public\\static\\js\\flowchart-generator-temp.js''\")",
+      "Read(//c/Users/OGURATakeo(小倉健生)/Desktop/時間計測ツール/.claude/commands/**)",
+      "Read(//c/Users/OGURATakeo(小倉健生)/Desktop/RPA動作用フォルダ/DWH取得ツール/**)",
+      "Read(//c/Users/OGURATakeo(小倉健生)/Desktop/RPA動作用フォルダ/DWH取得ツール/00_source/**)",
+      "Read(//c/Users/OGURATakeo(小倉健生)/Desktop/RPA動作用フォルダ/DWH取得ツール/01_TOOL/**)",
+      "Bash(taskkill //F //PID 30792)",
+      "Bash(taskkill:*)",
+      "Bash(powershell -Command \"Stop-Process -Id 37436 -Force\")",
+      "Bash(npm start)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(powershell -Command \"Stop-Process -Id 37584 -Force\")"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

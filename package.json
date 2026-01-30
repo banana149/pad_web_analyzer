@@ -1,0 +1,38 @@
+{
+  "name": "pad-web-analyzer-js",
+  "version": "1.0.0",
+  "description": "Power Automate Desktop アクション解析ツール (JavaScript版)",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "nodemon app.js",
+    "test": "jest"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "multer": "^1.4.5-lts.1",
+    "jszip": "^3.10.1",
+    "xml2js": "^0.6.2",
+    "csv-writer": "^1.6.0",
+    "cors": "^2.8.5",
+    "path": "^0.12.7",
+    "fs-extra": "^11.1.1",
+    "uuid": "^9.0.1",
+    "dotenv": "^16.3.1",
+    "openai": "^4.20.1",
+    "axios": "^1.6.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1",
+    "jest": "^29.7.0"
+  },
+  "keywords": [
+    "power-automate",
+    "desktop",
+    "automation",
+    "analyzer",
+    "web-app"
+  ],
+  "author": "",
+  "license": "MIT"
+}
