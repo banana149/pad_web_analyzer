@@ -517,6 +517,12 @@
             text-align: center;
         }
 
+        .tree .end {
+            border: none !important;
+            background: none !important;
+            padding: 0 !important;
+        }
+
         .end-action {
             background-color: #ffe6f3;
             border-color: #dc3545;
@@ -942,6 +948,46 @@
             position: relative;
         }
         /* ===== ▲▲▲ ここまで並列処理用のスタイルを追加 ▲▲▲ ===== */
+        /* XXフロー用のパネルスタイル */
+    .xx-flow-panel {
+        background-color: #ffffff;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        border-left: 4px solid #007bff; /* 青い太線 */
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        overflow: hidden;
+        margin-bottom: 15px;
+    }
+
+    .xx-flow-header {
+        background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+        color: #0d47a1;
+        font-weight: 600;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 16px;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+    }
+
+    .xx-flow-header:hover {
+        background-color: #f0f6ff;
+    }
+
+    .xx-flow-content {
+        padding: 15px;
+        display: none; /* 初期状態は非表示 */
+        border-top: 1px solid #e0e0e0;
+        background-color: #fff;
+    }
+    /* ツリー構造表示用 */
+    .tree ul { list-style: none; padding-left: 20px; border-left: 1px dashed #ccc; margin: 5px 0; }
+    .tree li { margin: 8px 0; position: relative; padding-left: 15px; }
+    .tree li::before { content: "┕"; position: absolute; left: 0; color: #888; }
+    .badge { font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; margin-left: 8px; color: white; font-weight: bold; }
+    .badge.cloud { background: #0078d4; }
+    .badge.desktop { background: #2b88d8; }
 
 
     </style>
@@ -967,13 +1013,24 @@
             desktopFlows: []  // デスクトップフロー（XMLファイル）の解析結果を保存
         };
 
+        let workflowNameMap = {};
+
+    window.addEventListener('message', function(event) {
+    //console.log("子画面（flowchart）が受け取ったデータ:", event.data);
+    if (!event.data) {
+            console.error("データが空です。親画面からの送信に失敗している可能性があります。");
+        }
+        //console.log('cloudFlows:', event.data.cloudFlows);
+        //console.log('desktopFlows:', event.data.desktopFlows);
+    });
+
         // ページ読み込み時にLocalStorageをチェックして自動解析
         window.addEventListener('DOMContentLoaded', function() {
             const pendingFile = localStorage.getItem('pendingFlowchartFile');
             const pendingFileName = localStorage.getItem('pendingFlowchartFileName');
 
             if (pendingFile && pendingFileName) {
-                console.log('🔄 メインページから渡されたファイルを自動解析します:', pendingFileName);
+                //console.log('🔄 メインページから渡されたファイルを自動解析します:', pendingFileName);
 
                 try {
                     // Base64をArrayBufferに変換
@@ -999,7 +1056,7 @@
                     localStorage.removeItem('pendingFlowchartFileName');
 
                     // 自動的に解析を開始
-                    console.log('✅ ファイルを設定しました。自動解析を開始します...');
+                    //console.log('✅ ファイルを設定しました。自動解析を開始します...');
 
                     // 少し遅延させて確実に実行
                     setTimeout(() => {
@@ -1018,11 +1075,11 @@
         function isZipFile(file) {
             if (!file) return false;
 
-            console.log('📋 ファイル詳細情報:');
-            console.log('  ファイル名:', file.name);
-            console.log('  ファイルタイプ:', file.type);
-            console.log('  ファイルサイズ:', file.size, 'バイト');
-            console.log('  最終更新日:', file.lastModified);
+            //console.log('📋 ファイル詳細情報:');
+            //console.log('  ファイル名:', file.name);
+            //console.log('  ファイルタイプ:', file.type);
+            //console.log('  ファイルサイズ:', file.size, 'バイト');
+            //console.log('  最終更新日:', file.lastModified);
 
             const validMimeTypes = [
                 'application/zip',
@@ -1032,24 +1089,24 @@
             ];
 
             if (validMimeTypes.includes(file.type)) {
-                console.log('✅ MIMEタイプによるzip判定成功:', file.type);
+                //console.log('✅ MIMEタイプによるzip判定成功:', file.type);
                 return true;
             }
 
             const fileName = file.name.toLowerCase();
             if (fileName.endsWith('.zip')) {
-                console.log('✅ 拡張子によるzip判定成功:', fileName);
+                //console.log('✅ 拡張子によるzip判定成功:', fileName);
                 return true;
             }
 
             if (file.size === 0) {
-                console.log('❌ ファイルサイズが0バイトです');
+                //console.log('❌ ファイルサイズが0バイトです');
                 return false;
             }
             
-            console.log('⚠️ zipファイルとして識別できませんでした');
-            console.log('  期待するMIMEタイプ:', validMimeTypes.join(', '));
-            console.log('  実際のMIMEタイプ:', file.type || '(設定されていません)');
+            //console.log('⚠️ zipファイルとして識別できませんでした');
+            //console.log('  期待するMIMEタイプ:', validMimeTypes.join(', '));
+            //console.log('  実際のMIMEタイプ:', file.type || '(設定されていません)');
 
             return false;
         }
@@ -1061,17 +1118,17 @@
             const resultsContainer = document.getElementById('resultsContainer');
             
             resultsContainer.innerHTML = '';
-            console.log('📁 ファイル選択イベントが発生しました');
+            //console.log('📁 ファイル選択イベントが発生しました');
 
             if (!file) {
-                console.log('❌ ファイルが選択されていません');
+                //console.log('❌ ファイルが選択されていません');
                 analyzeButton.disabled = true;
                 return;
             }
 
             if (isZipFile(file)) {
                 analyzeButton.disabled = false;
-                console.log('✅ zipファイルが選択されました:', file.name);
+                //console.log('✅ zipファイルが選択されました:', file.name);
                 resultsContainer.innerHTML = `
                     <div class="container">
                         <div class="success">
@@ -1082,7 +1139,7 @@
                 `;
             } else {
                 analyzeButton.disabled = true;
-                console.log('❌ zipファイル以外が選択されました:', file.name);
+                //console.log('❌ zipファイル以外が選択されました:', file.name);
                 resultsContainer.innerHTML = `
                     <div class="container">
                         <div class="error">
@@ -1098,7 +1155,7 @@
 
         // メイン処理：zipファイルを解析する関数
         async function analyzeZipFile() {
-            console.log('🚀 解析処理を開始します');
+            //console.log('🚀 解析処理を開始します');
             const fileInput = document.getElementById('zipFileInput');
             const loadingIndicator = document.getElementById('loadingIndicator');
             const resultsContainer = document.getElementById('resultsContainer');
@@ -1115,30 +1172,30 @@
                 analyzeButton.disabled = true;
                 resultsContainer.innerHTML = '';
 
-                console.log('📦 zipファイルの読み込みを開始:', file.name);
-                console.log('📊 ファイル詳細: サイズ:', file.size, 'バイト, タイプ:', file.type);
+                //console.log('📦 zipファイルの読み込みを開始:', file.name);
+                //console.log('📊 ファイル詳細: サイズ:', file.size, 'バイト, タイプ:', file.type);
 
                 if (!isZipFile(file)) {
                     throw new Error(`選択されたファイルはzipファイルではありません: ${file.name}`);
                 }
 
-                console.log('🔄 JSZip.loadAsync()を実行中...');
+                //console.log('🔄 JSZip.loadAsync()を実行中...');
                 const zip = await JSZip.loadAsync(file);
-                console.log('✅ zipファイルの読み込み完了');
+                //console.log('✅ zipファイルの読み込み完了');
 
                 const fileList = Object.keys(zip.files);
-                console.log('📁 zip内のファイル一覧 (' + fileList.length + '個):');
+                //console.log('📁 zip内のファイル一覧 (' + fileList.length + '個):');
                 fileList.forEach(filename => {
-                    console.log('  - ' + filename + (zip.files[filename].dir ? ' (ディレクトリ)' : ''));
+                    //console.log('  - ' + filename + (zip.files[filename].dir ? ' (ディレクトリ)' : ''));
                 });
 
                 analysisResults.cloudFlows = [];
                 analysisResults.desktopFlows = [];
-
-                await analyzeWorkflowsFolder(zip);
                 await analyzeCustomizationsXml(zip);
+                await analyzeWorkflowsFolder(zip);
 
                 displayResults();
+                await analyzeFlowRelations(zip);
 
             } catch (error) {
                 console.error('❌ エラーが発生しました:', error);
@@ -1186,81 +1243,83 @@
 
         // Workflowsフォルダ内のJSONファイルを解析する関数
         async function analyzeWorkflowsFolder(zip) {
-            console.log('📁 Workflowsフォルダの解析を開始');
-            for (const [filename, file] of Object.entries(zip.files)) {
-                if (filename.includes('Workflows/') && filename.endsWith('.json') && !file.dir) {
-                    console.log('📄 JSONファイルを発見:', filename);
-                    try {
-                        const content = await file.async('string');
-                        const jsonData = JSON.parse(content);
-                        console.log('📊 JSON解析完了:', filename);
+        for (const [filename, file] of Object.entries(zip.files)) {
+            if (filename.includes('Workflows/') && filename.endsWith('.json') && !file.dir) {
+                try {
+                    const content = await file.async('string');
+                    const jsonData = JSON.parse(content);
 
-                        if (jsonData.properties &&
-                            jsonData.properties.definition &&
-                            jsonData.properties.definition.actions) {
-                            console.log('✅ actions要素を発見:', filename);
-                            analysisResults.cloudFlows.push({
-                                filename: filename,
-                                displayName: decodeURIComponent(filename.split('/').pop().replace('.json', '')),
-                                definition: jsonData.properties.definition,
-                                actions: jsonData.properties.definition.actions
-                            });
-                        } else {
-                            console.log('⚠️ actions要素が存在しないため処理をスキップ:', filename);
+                    if (jsonData.properties && jsonData.properties.definition && jsonData.properties.definition.actions) {
+                    
+                        // --- ★ここから修正：表示名の決定ロジック ---
+                        // 現在のファイル名（例: -f4dc...json）を取得
+                        const pureFileName = filename.split('/').pop().toLowerCase();
+                    
+                        // customizations.xmlから取得した名前があれば採用、なければファイル名を使用
+                        let flowDisplayName = workflowNameMap[pureFileName];
+                        if (!flowDisplayName) {
+                            flowDisplayName = decodeURIComponent(filename.split('/').pop().replace('.json', ''));
                         }
+                        // --- ★ここまで修正 ---
+
+                        analysisResults.cloudFlows.push({
+                        filename: filename,
+                        displayName: flowDisplayName, // 紐付けられた名前に変わる
+                        definition: jsonData.properties.definition,
+                        actions: jsonData.properties.definition.actions
+                        });
+                    }
                     } catch (parseError) {
-                        console.error('❌ JSON解析エラー:', filename, parseError);
+                    console.error('❌ JSON解析エラー:', filename, parseError);
                     }
                 }
             }
-            console.log(`📊 クラウドフロー解析完了: ${analysisResults.cloudFlows.length}個のフローを発見`);
         }
 
         // customizations.xmlファイルを解析する関数
         async function analyzeCustomizationsXml(zip) {
-            console.log('🔍 customizations.xmlファイルを検索中');
             const customizationsFile = zip.file('customizations.xml');
+            if (!customizationsFile) return;
 
-            if (!customizationsFile) {
-                console.log('⚠️ customizations.xmlファイルが見つかりませんでした');
-                return;
+        try {
+            const xmlContent = await customizationsFile.async('string');
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(xmlContent, 'text/xml');
+            const workflows = xmlDoc.querySelectorAll('ImportExportXml Workflows Workflow');
+
+            workflows.forEach((workflow) => {
+            // --- ★ここから追記：名前マッピングの作成 ---
+                const name = workflow.getAttribute('Name');
+                const jsonFileNameElem = workflow.querySelector('JsonFileName');
+            
+                if (jsonFileNameElem && name) {
+                    const jsonPath = jsonFileNameElem.textContent; // 例: /Workflows/-F4DC...json
+                    // ファイル名部分だけを抽出して小文字で統一（比較用）
+                    const fileNameKey = jsonPath.split('/').pop().toLowerCase(); 
+                    workflowNameMap[fileNameKey] = name;
+                }
+            // --- ★ここまで追記 ---
+
+            // 既存のデスクトップフロー抽出ロジック（そのまま）
+            const definitionElement = workflow.querySelector('Definition');
+            if (definitionElement) {
+                const category = workflow.querySelector('Category')?.textContent;
+                if (category === "6") { // Category 6 がデスクトップフロー
+                    const workflowName = name || `Desktop Flow`;
+                    analysisResults.desktopFlows.push({
+                        name: workflowName,
+                        definition: definitionElement.textContent
+                    });
+                }
             }
-
-            console.log('📄 customizations.xmlファイルを発見');
-            try {
-                const xmlContent = await customizationsFile.async('string');
-                console.log('✅ XML読み込み完了');
-
-                const parser = new DOMParser();
-                const xmlDoc = parser.parseFromString(xmlContent, 'text/xml');
-                const workflows = xmlDoc.querySelectorAll('ImportExportXml Workflows Workflow');
-                console.log(`📊 ${workflows.length}個のWorkflow要素を発見`);
-
-                workflows.forEach((workflow, index) => {
-                    const definitionElement = workflow.querySelector('Definition');
-                    if (definitionElement) {
-                        console.log(`✅ Definition要素を発見 (Workflow ${index + 1})`);
-                        const workflowName = workflow.getAttribute('Name') || `Desktop Flow ${index + 1}`;
-                        const definitionContent = definitionElement.textContent || definitionElement.innerHTML;
-                        analysisResults.desktopFlows.push({
-                            name: workflowName,
-                            definition: definitionContent,
-                            index: index + 1
-                        });
-                        console.log(`💾 デスクトップフロー情報を保存: ${workflowName}`);
-                    } else {
-                        console.log(`⚠️ Definition要素が見つかりません (Workflow ${index + 1})`);
-                    }
-                });
-            } catch (error) {
-                console.error('❌ XML解析エラー:', error);
-            }
-            console.log(`📊 デスクトップフロー解析完了: ${analysisResults.desktopFlows.length}個のフローを発見`);
-        }
-
+        });
+    } catch (error) {
+        console.error('❌ XML解析エラー:', error);
+    }
+}
         // 解析結果を画面に表示する関数
         function displayResults() {
-            console.log('🖥️ 解析結果の表示を開始');
+            //console.log('🖥️ 解析結果の表示を開始');
             const resultsContainer = document.getElementById('resultsContainer');
             let html = '';
 
@@ -1307,7 +1366,11 @@
                 analysisResults.desktopFlows.forEach((flow, index) => {
                     // 一意のIDを生成して、コンテンツを特定できるようにする
                     const panelId = `desktop-flow-${index}`; 
-
+                    console.log('✅ 解析完了 - 画面表示を開始します');
+                    console.log('クラウドフローの数:', analysisResults.cloudFlows.length);
+                    console.log('クラウドフロー詳細:', analysisResults.cloudFlows);
+                    console.log('デスクトップフローの数:', analysisResults.desktopFlows.length);
+                    console.log('デスクトップフロー詳細:', analysisResults.desktopFlows);
                     // .workflow-item の代わりに新しいパネルUIを使用
                     html += `<div class="desktop-flow-panel">`;
         
@@ -1334,7 +1397,24 @@
                 });
                 html += `</div>`;
             }
-
+// ★ここから挿入してください★
+            // --- XXフローの結果を表示（追加部分） ---
+            const xxPanelId = `xx-flow-0`;
+            html += `<div class="xx-flow-panel">`;
+            html += `<div class="xx-flow-header" id="${xxPanelId}-header" onclick="toggleFlowPanel('${xxPanelId}-content', this.id)">`; 
+            html += `  <div class="header-left">`;
+            html += `    <i class="fas fa-project-diagram me-1"></i>`; 
+            html += `    <span class="panel-title">全フローの流れ</span>`;
+            html += `  </div>`;
+            html += `  <div class="header-right">`;
+            html += `    <span class="toggle-badge">詳細を表示 ▼</span>`;
+            html += `  </div>`;
+            html += `</div>`;
+            html += `<div class="xx-flow-content" id="${xxPanelId}-content">`;
+            html += `  <div id="treeView" class="tree">階層構造を解析中...</div>`;
+            html += `</div>`;
+            html += `</div>`; 
+            // ★ここまで挿入★
             // 結果が何もない場合
             if (analysisResults.cloudFlows.length === 0 && analysisResults.desktopFlows.length === 0) {
                 html += `<div class="container">`;
@@ -1343,7 +1423,7 @@
             }
 
             resultsContainer.innerHTML = html;
-            console.log('✅ 解析結果の表示完了');
+            //console.log('✅ 解析結果の表示完了');
         }
 
         const ICONS = {
@@ -2124,7 +2204,7 @@
 
 // ★ステップ2: 関数定義を変更し、矢印データをグローバルに保存
         function generateCloudFlowChart(actions, definition, panelId, containerId) {
-            console.log('🎨 Generating new cloud flowchart for:', panelId);
+            //console.log('🎨 Generating new cloud flowchart for:', panelId);
             
             // ★変更: 引数からIDを受け取る (uniqueIdSuffixはpanelIdで代用)
             const uniqueIdSuffix = panelId;
@@ -2204,7 +2284,7 @@
         // ★★★★★★★★★★
         function generateDesktopFlowChart(definition) {
             //698行目で引き渡されたコードの中身（generateCloudFlowChart）そしてデータに(definition(699行目))を持ってくる
-            //console.log('🎨 デスクトップフローチャートを生成中');//ログ格納
+            ////console.log('🎨 デスクトップフローチャートを生成中');//ログ格納
 
             flowchartHtml = '<div class="flowchart">';
             flowchartHtml += `<h4><i class="fa-solid fa-layer-group"></i> Main:</h4>`;
@@ -2223,8 +2303,9 @@
             //箱を閉じる
 
             const lines = definition.split(/\\r?\\n/);
+            console.log('lines',lines)
             const escape = (text) => text.replace(/"/g, '#quot;').replace(/'/g, '#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-            //console.log('【lines】',lines);
+            ////console.log('【lines】',lines);
             // 開始ノードを定義フローチャート実施
             let blockDatetable = []
             let BlockCount = 0;
@@ -2705,12 +2786,12 @@
 
 
             }
-            //console.log('★lines',lines);
+            ////console.log('★lines',lines);
             lines.forEach((line, index) => {
-                //console.log('①Line',line,'index',index,'flowchartHtml',flowchartHtml);
+                ////console.log('①Line',line,'index',index,'flowchartHtml',flowchartHtml);
                 
                 
-                //console.log('blockDatetableDiv (文字列化)', JSON.stringify(blockDatetable));
+                ////console.log('blockDatetableDiv (文字列化)', JSON.stringify(blockDatetable));
                 // スキップしたい接頭辞（始まりの文字列）のリスト
                 const skipPrefixes = [
                     '\"@@ConnectionString:' ,
@@ -2744,7 +2825,7 @@
                     'SWITCH',
                 ]
                 const flowchartLines = flowchartHtml.split('>');
-                //console.log('②【BlockCount】',BlockCount,'【BlockEndflg】',BlockEndFlg,'【flowchart配列（行単位）】', flowchartLines);
+                ////console.log('②【BlockCount】',BlockCount,'【BlockEndflg】',BlockEndFlg,'【flowchart配列（行単位）】', flowchartLines);
 
                 
                 // 行の先頭の不要な空白を削除し、charListのいずれかのキーワードで始まるかチェック
@@ -2882,7 +2963,7 @@
                 //最後の行（""）処理終了
 
                 
-                //console.log('⓪-0',JSON.stringify(SpecialList));
+                ////console.log('⓪-0',JSON.stringify(SpecialList));
                 //SubFlowアクション開始
                 if (line.trimStart().startsWith('FUNCTION')) {
                     if(FunctionCount ===0){
@@ -2894,7 +2975,7 @@
                     }
                     SpecialList.forEach((SpecialLists, index) => {
                         
-                    //console.log('【index】',index,SpecialLists);
+                    ////console.log('【index】',index,SpecialLists);
                     });
                     
                     //サブフロー移行時にEndアクションがあった場合lineにEndが反映されないため〈/div〉を格納
@@ -2938,7 +3019,7 @@
                 }
                 //SubFlowアクション終了
 
-                //console.log('⓪-1',JSON.stringify(SpecialList));
+                ////console.log('⓪-1',JSON.stringify(SpecialList));
 
                 //IF処理開始
                 if (line.trimStart().startsWith("IF")) {
@@ -2971,12 +3052,12 @@
                     ONERRORCount++;
                 } 
 
-                //console.log('⓪-2',JSON.stringify(SpecialList));
+                ////console.log('⓪-2',JSON.stringify(SpecialList));
 
                 SpecialListWord = SpecialList[SpecialList.length - 1];
-                //console.log('⓪-3SpecialListWord',SpecialListWord);
+                ////console.log('⓪-3SpecialListWord',SpecialListWord);
                 if (SpecialListWord === 'IF') {
-                    console.log('⚙Line',line,index);
+                    //console.log('⚙Line',line,index);
                     if (line.trimStart().startsWith("IF")) {
                         let IfCord = line
                             .replace("IF ", "")    // 先頭の "IF " を削除
@@ -3046,7 +3127,7 @@
                         ArrowCount =0;
                         return;
                     }
-                    console.log('⚙LineElse',line);
+                    //console.log('⚙LineElse',line);
                     if (line.includes("ELSE")) {
                         flowchartHtml += '</div>';
                         flowchartHtml += '</div>';
@@ -3091,7 +3172,7 @@
                         flowchartHtml += '<div class="Loop-container">'
                         let parts = line.split(' ');
                         parts = parts.filter(item => item !== "");
-                        //console.log('★Parts',parts);
+                        ////console.log('★Parts',parts);
                         if (parts.length > 1 && parts[1] === "FOREACH") {
                             flowchartHtml += '<span class="Loop-label">それぞれに適応</span>'
                             flowchartHtml += `<span style="background-color: white;">”${parts[4]}”を1行ずつ読み取り、全ての行を読み取るまでループ。（カレントアイテム:${parts[2]})</span>` ;
@@ -3107,7 +3188,7 @@
 
                             //作業キュー項目を処理する
                             if(parts[2] === "(WorkQueues.ProcessWorkQueueItem.ProcessWorkQueueItem"){
-                                //console.log('★Parts2',parts);
+                                ////console.log('★Parts2',parts);
                                 let matchForLeft = parts[4].match(/\$'''(.*?)'''/);
                                 Left = matchForLeft[1]
                                 let Right = parts[6].replace(")", "");
@@ -3138,9 +3219,9 @@
                             }
 
                             if (parts[7] === "="){
-                                //console.log('★Left2',Left);
+                                ////console.log('★Left2',Left);
                                 flowchartHtml += `<span style="background-color: white;">${Left}が${Right}と等しい場合ループ</span>` ;
-                                //console.log('★Left2',Left);
+                                ////console.log('★Left2',Left);
                             }else if (parts[7] === "<>"){
                                 flowchartHtml += `<span style="background-color: white;">${Left}が${Right}と等しくない場合ループ</span>` ;
                             }else if (parts[7] === ">"){
@@ -3261,7 +3342,7 @@
                         let parts = line.split(' ');
                         parts = parts.filter(item => item !== "");
                         let REGIONName = parts[1]
-                        //console.log('★parts',parts);
+                        ////console.log('★parts',parts);
                         flowchartHtml += `<div class="region-group-box">`;
                         flowchartHtml += `<span class="region-box-message">Region_${REGIONName}</span>`;
                         ArrowCount =0;
@@ -3289,39 +3370,39 @@
                 }
 
                                   //★IfCountが0ではない場合（1以上の場合）
-                console.log('表示させたいログ','★index',index,'★line',line);                  //If処理終了
+                //console.log('表示させたいログ','★index',index,'★line',line);                  //If処理終了
                 if (SpecialListWord === 'BLOCK') {
                     //開始
-                    console.log('★BLOCKActionListA',index,'★line',line);
+                    //console.log('★BLOCKActionListA',index,'★line',line);
                         //LineがBLOCKであればTrue
                         //let BlockIconName = '';
                         if (line.trim().startsWith("ON BLOCK ERROR")) {
                             BlockEndFlg = true
-                            console.log('★BLOCKActionList',index,'★line',line);  
+                            //console.log('★BLOCKActionList',index,'★line',line);  
                             return; // 条件に一致した場合、ここで処理を抜ける
                             }else{
-                                console.log('★line（else）',line);
+                                //console.log('★line（else）',line);
                             }
                 
                         //BlockEndFlgをfalse化。(lineがEndかつBlockEndFlgがtrueの場合)
                         if (line.trim() === 'END' && BlockEndFlg) {
                             BlockEndFlg = false;
-                            console.log('★ENDtrue',index,'★line',line); 
+                            //console.log('★ENDtrue',index,'★line',line); 
                             return;
                             }
 
                         if (line.trim() === 'END' && BlockEndFlg === 'false') {
                             BlockEndFlg = false;
                             flowchartHtml += '</div>';
-                            console.log('★ENDfalse',index,'★line',line);
+                            //console.log('★ENDfalse',index,'★line',line);
                             return;
                             }
 
-                        //console.log('★BLOCKIndex',index,'★line',line,'★line.trim()',line.trim());
+                        ////console.log('★BLOCKIndex',index,'★line',line,'★line.trim()',line.trim());
                         if (line.trim() === 'END') {
                             if (BlockCount >= 2){
                                 flowchartHtml += '</div>';
-                                //console.log('②-1【BlockCount】',BlockCount,'【BlockEndflg】',BlockEndFlg,'【flowchart配列（行単位）】', flowchartLines);
+                                ////console.log('②-1【BlockCount】',BlockCount,'【BlockEndflg】',BlockEndFlg,'【flowchart配列（行単位）】', flowchartLines);
                                 BlockCount --;
                                 SpecialList.pop();
                                 flowchartHtml += '<div class="arrow-container">'
@@ -3392,6 +3473,15 @@
                 return;
             }
             );
+
+            if(EndFlg === 'True'){
+                flowchartHtml += `<div class="end end-action">`;
+                        //div class="step(124行目)の中にstep-trigger(136行目)をflowchartHtmlを追加
+                flowchartHtml += `終了`;
+                        //箱の中にデスクトップフロー開始を表示
+                flowchartHtml += `</div>`;
+            }
+            
             
             //★flowchartHtml += '</div>';
             //div class="step(124行目)の中にstep-action(141行目)をflowchartHtmlを閉じる
@@ -3412,14 +3502,14 @@
             
             //★flowchartHtmlを1行ずつ配列型として読み取る
             const flowchartLines = flowchartHtml.split('>');
-            //console.log('④【flowchart配列】', flowchartLines);
-            //console.log('⑤【配列の行数】', flowchartLines.length);
-            console.log('★lines',lines);
+            ////console.log('④【flowchart配列】', flowchartLines);
+            ////console.log('⑤【配列の行数】', flowchartLines.length);
+            //console.log('★lines',lines);
             
             // 各行を処理し、'＞'を追加
             flowchartLines.forEach((line, index) => {
                 const lineWithArrow = line.trim() !== '' ? line + '＞' : line;
-                //console.log(`【行${index + 1}】`, lineWithArrow);
+                ////console.log(`【行${index + 1}】`, lineWithArrow);
             });
             
             return flowchartHtml;//上記の処理を終了してflowchartHtmlに返す
@@ -3440,6 +3530,146 @@
  * @param {string} headerId - クリックされたヘッダー要素のID
  * @param {string | null} containerId - (オプション) クラウドフローのSVGコンテナID
  */
+
+        /* ==========================================
+       XXフロー（ツリー構造）解析用ロジック
+       ========================================== */
+
+ // 丸数字に変換する補助関数
+    function getCircleNumber(num) {
+        const circles = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"];
+        return circles[num - 1] || num;
+    }
+
+    // 1. ツリー構造をHTMLとして組み立てる関数
+    function buildTreeHtml(parentIds, flowMap, relations, flowTypes, prefix = "") {
+        const ul = document.createElement('ul');
+    
+        parentIds.forEach((id, index) => {
+            const li = document.createElement('li');
+            const badgeClass = flowTypes[id] === "Desktop" ? "desktop" : "cloud";
+            const displayName = flowMap[id] || id; 
+        
+            // --- 番号の生成 ---
+            let currentNumber;
+            if (prefix === "") {
+                // 第一階層：①, ②...
+                currentNumber = getCircleNumber(index + 1);
+            } else {
+                // 第二階層以降：①-1, ①-1-1...
+                currentNumber = prefix + "-" + (index + 1);
+            }
+        
+            li.innerHTML = `<strong>${currentNumber} ${displayName}</strong><span class="badge ${badgeClass}">${flowTypes[id] || 'Cloud'}</span>`;
+        
+            const children = relations.filter(r => r.parent === id).map(r => r.child);
+            if (children.length > 0) {
+                // 子要素を呼び出す際に現在の番号を prefix として渡す
+                li.appendChild(buildTreeHtml(children, flowMap, relations, flowTypes, currentNumber));
+            }
+            ul.appendChild(li);
+        });
+        return ul;
+    }
+
+    async function analyzeFlowRelations(zip) {
+    const flowMap = {};
+    const relations = [];
+    const flowTypes = {};
+
+    try {
+        // --- 1. データ解析フェーズ（まずは情報を集める） ---
+
+        // customizations.xml の解析（デスクトップフローと全体の名前取得）
+        const custFile = zip.file("customizations.xml");
+        if (custFile) {
+            const custXmlStr = await custFile.async("string");
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(custXmlStr, "text/xml");
+            const workflows = xmlDoc.querySelectorAll("Workflow");
+
+            workflows.forEach(wf => {
+                const id = wf.getAttribute("WorkflowId").replace(/[{}]/g, '').toLowerCase();
+                const name = wf.getAttribute("Name");
+                const category = wf.querySelector("Category")?.textContent;
+                flowMap[id] = name;
+                flowTypes[id] = (category === "6") ? "Desktop" : "Cloud";
+
+                const definition = wf.querySelector("Definition")?.textContent;
+                if (definition) {
+                    const matches = [...definition.matchAll(/FlowId:\s*'([a-f0-9\-]+)'/gi)];
+                    matches.forEach(m => {
+                        relations.push({ parent: id, child: m[1].toLowerCase() });
+                    });
+                }
+            });
+        }
+
+        // クラウドフローのJSON解析（呼び出し関係の取得）
+        const jsonFiles = Object.keys(zip.files).filter(name => name.endsWith('.json') && name.includes('Workflows/'));
+        for (const fileName of jsonFiles) {
+            const content = await zip.file(fileName).async("string");
+            const matchResult = fileName.match(/-([A-F0-9\-]+)\.json/i);
+            if (matchResult) {
+                const parentId = matchResult[1].toLowerCase();
+                const subMatches = [...content.matchAll(/"(?:workflowReferenceName|uiFlowId)":\s*"([a-f0-9\-]+)"/gi)];
+                subMatches.forEach(m => {
+                    relations.push({ parent: parentId, child: m[1].toLowerCase() });
+                });
+            }
+        }
+
+        // --- 2. 構造の特定 ---
+            const childrenIds = new Set(relations.map(r => r.child));
+            const roots = Object.keys(flowMap).filter(id => !childrenIds.has(id));
+
+        // --- 3. 描画フェーズ（画面に表示する） ---
+            const treeView = document.getElementById('treeView');
+            if (treeView) {
+                treeView.innerHTML = ''; // 表示エリアをリセット
+
+                if (roots.length > 0) {
+                    // 第一階層（ルート）ごとにループを回して描画
+                    roots.forEach((rootId, index) => {
+                        const rootName = flowMap[rootId] || rootId;
+                        const circleNum = getCircleNumber(index + 1);
+
+                        const startDiv = document.createElement('div');
+                        startDiv.style.fontWeight = "bold";
+                        startDiv.style.fontSize = "16px";
+                        startDiv.style.color = "#0078d4"; // 青色
+                        startDiv.style.marginBottom = "5px";
+                        startDiv.innerHTML = `${circleNum} START`;
+                        treeView.appendChild(startDiv);
+                        // ① 該当するルートとその子孫だけのツリーを作成して追加
+                        // 第三引数 prefix を空文字にすることで、このルート専用の枝を作成
+                        const singleTree = buildTreeHtml([rootId], flowMap, relations, flowTypes, (index + 1).toString());
+                        treeView.appendChild(singleTree);
+
+                        // ② その直後にENDボックスを追加
+                        const endDiv = document.createElement('div');
+                        endDiv.style.marginTop = "5px";
+                        endDiv.style.marginBottom = "20px";
+                        endDiv.style.paddingLeft = "0px";
+                        endDiv.style.textAlign = "left";  // 左揃えを確実にする
+                    
+                        // 「① 名前_END」という形式で作成
+                        // 「① 名前_END」という形式で作成（赤枠と背景を消し、文字色を赤へ）
+                        endDiv.innerHTML = `<span style="display:inline-block; font-weight:bold; font-size:16px; color:#dc3545; border:none; background:none; padding:0;">${circleNum} END</span>`;
+                        //endDiv.innerHTML = `<span class="end" style="display:inline-block; font-weight:bold; font-size:14px; color:#dc3545;">END_${circleNum} ${rootName}</span>`;
+                    
+                        treeView.appendChild(endDiv);
+                    });
+                } else {
+                    treeView.innerHTML = '<p style="color: #888;">階層構造（親子関係）は見つかりませんでした。</p>';
+                }
+            }
+
+        } catch (e) {
+            console.error("XXフロー解析エラー:", e);
+        }
+    }
+
         function toggleFlowPanel(contentId, headerId, containerId = null) {
             const content = document.getElementById(contentId);
             const header = document.getElementById(headerId);
@@ -3475,7 +3705,7 @@
                     
                     // まだ矢印が描画されていない場合のみ実行（初回オープン時のみ）
                     if (container && !container.dataset.arrowsDrawn) {
-                        console.log('🎨 矢印を描画します:', containerId);
+                        //console.log('🎨 矢印を描画します:', containerId);
                         const data = window.flowChartData[containerId];
                         
                         // 描画処理 (DOMのレンダリング完了を待つためにわずかに遅延)

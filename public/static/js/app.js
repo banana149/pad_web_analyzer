@@ -4,6 +4,7 @@ let currentSolutionType = null; // 'PA' or 'PAD'
 let allActions = [];
 let filteredActions = [];
 let currentPage = 1;
+let selectedZipFile = null;
 const itemsPerPage = 50;
 let isAnalyzing = false; // 二重実行防止フラグ
 let currentViewMode = 'group'; // 表示モード: 'list', 'group', 'flowchart', 'aisummary'
@@ -50,14 +51,7 @@ function initializeEventListeners() {
     uploadArea.addEventListener('drop', handleDrop);
 }
 
-function handleFileSelect(e) {
-    console.log('handleFileSelect called');
-    const file = e.target.files[0];
-    console.log('Selected file:', file ? file.name : 'none');
-    if (file) {
-        displayFileInfo(file);
-    }
-}
+
 
 function handleDragOver(e) {
     e.preventDefault();
@@ -81,22 +75,9 @@ function handleDrop(e) {
     }
 }
 
-function displayFileInfo(file) {
-    console.log('displayFileInfo called for:', file.name);
-    document.getElementById('fileName').textContent = file.name;
-    document.getElementById('fileInfo').style.display = 'block';
-    document.getElementById('analyzeButton').disabled = false;
-    console.log('Analyze button enabled');
-}
 
-function clearFile() {
-    console.log('clearFile called');
-    document.getElementById('fileInput').value = '';
-    document.getElementById('fileInfo').style.display = 'none';
-    document.getElementById('analyzeButton').disabled = true;
-    isAnalyzing = false; // フラグをリセット
-    console.log('isAnalyzing reset to false');
-}
+
+
 
 function resetResults() {
     console.log('Resetting previous results...');
@@ -139,6 +120,9 @@ async function analyzeFile() {
 
     const fileInput = document.getElementById('fileInput');
     const file = fileInput.files[0];
+    // --- ★ここからExcelファイル取得のコードを追加 ---
+    const excelFileInput = document.getElementById('excelFileInput');
+    const excelFile = excelFileInput ? excelFileInput.files[0] : null;
     console.log('File from input:', file ? file.name : 'NO FILE');
 
     if (!file) {
@@ -158,6 +142,11 @@ async function analyzeFile() {
 
     const formData = new FormData();
     formData.append('file', file);
+
+    if (excelFile) {
+        formData.append('excelFile', excelFile);
+        console.log('Excel file added to FormData');
+    }
 
     document.getElementById('loading').style.display = 'block';
     document.getElementById('analyzeButton').disabled = true;
@@ -453,32 +442,33 @@ function setViewMode(mode) {
     console.log('Switching view mode to:', mode);
     currentViewMode = mode;
 
-    // ボタンのアクティブ状態を切り替え
-    const listBtn = document.getElementById('viewModeList');
-    const groupBtn = document.getElementById('viewModeGroup');
-    const flowchartBtn = document.getElementById('viewModeFlowchart');
-    const aisummaryBtn = document.getElementById('viewModeAISummary');
-    const userguideBtn = document.getElementById('viewModeUserGuide');
+    // 1. 各モードボタンのアクティブ状態の切り替え
+    const buttons = {
+        list: document.getElementById('viewModeList'),
+        group: document.getElementById('viewModeGroup'),
+        flowchart: document.getElementById('viewModeFlowchart'),
+        aisummary: document.getElementById('viewModeAISummary'),
+        userguide: document.getElementById('viewModeUserGuide')
+    };
 
-    listBtn.classList.remove('active');
-    groupBtn.classList.remove('active');
-    flowchartBtn.classList.remove('active');
-    aisummaryBtn.classList.remove('active');
-    userguideBtn.classList.remove('active');
+    Object.values(buttons).forEach(btn => btn?.classList.remove('active'));
+    if (buttons[mode]) buttons[mode].classList.add('active');
 
-    if (mode === 'list') {
-        listBtn.classList.add('active');
-    } else if (mode === 'group') {
-        groupBtn.classList.add('active');
-    } else if (mode === 'flowchart') {
-        flowchartBtn.classList.add('active');
-    } else if (mode === 'aisummary') {
-        aisummaryBtn.classList.add('active');
-    } else if (mode === 'userguide') {
-        userguideBtn.classList.add('active');
+    // 2. ★ 修正：フィルターボタン（アイコン）のみを制御 ★
+    // 「フィルター」というテキストが含まれるボタン、または toggleFilter を呼ぶボタンを特定
+    const filterBtn = document.querySelector('button[onclick="toggleFilter()"]');
+    
+    if (filterBtn) {
+        if (mode === 'list' || mode === 'group') {
+            // 一覧・グループの時だけボタンを表示
+            filterBtn.style.setProperty('display', 'inline-block', 'important');
+        } else {
+            // それ以外のモードではボタンを消す（エリアの非表示命令は削除）
+            filterBtn.style.setProperty('display', 'none', 'important');
+        }
     }
 
-    // 表示を更新
+    // 3. 表示の更新（フローチャートなどの描画処理へ）
     displayTable();
 }
 
@@ -536,37 +526,49 @@ function displayListView() {
 
 function displayGroupView() {
     console.log('=== displayGroupView called ===');
-    console.log('filteredActions length:', filteredActions.length);
 
-    // 表示エリアの切り替え
+    // 表示エリアの切り替え設定
     document.getElementById('listViewArea').style.display = 'none';
     document.getElementById('groupViewArea').style.display = 'block';
     document.getElementById('flowchartViewArea').style.display = 'none';
     document.getElementById('aisummaryViewArea').style.display = 'none';
     document.getElementById('userGuideViewArea').style.display = 'none';
 
-    // フロー毎にグループ化
+    // 1. データのグループ化（既存の処理）
     const flowGroups = {};
     filteredActions.forEach((action, index) => {
         const flowName = action['フロー名'] || '不明なフロー';
         if (!flowGroups[flowName]) {
             flowGroups[flowName] = {};
         }
-
         const subflowName = action['サブフロー名'] || 'メインフロー';
         if (!flowGroups[flowName][subflowName]) {
             flowGroups[flowName][subflowName] = [];
         }
-
         flowGroups[flowName][subflowName].push({ ...action, originalIndex: index });
     });
 
-    console.log('Flow groups:', Object.keys(flowGroups));
+    // --- ★ここからが「全フローの流れ」を一番上に持ってくるための追加コード ★ ---
+    const allKeys = Object.keys(flowGroups);
+    
+    // 「全フローの流れ」という名前を「含む」キーを検索（部分一致で確実に取得）
+    const priorityKey = allKeys.find(key => key.includes('全フローの流れ'));
+    
+    let sortedFlowNames;
+    if (priorityKey) {
+        // 優先キー（全フローの流れ）を先頭にし、残りを名前順でソートして合体させる
+        const otherKeys = allKeys.filter(key => key !== priorityKey).sort((a, b) => a.localeCompare(b));
+        sortedFlowNames = [priorityKey, ...otherKeys];
+    } else {
+        // 見つからない場合は通常通り名前順でソート
+        sortedFlowNames = allKeys.sort((a, b) => a.localeCompare(b));
+    }
+    // --- ★ここまで★ ---
 
-    // アコーディオンHTMLを生成
+    // 2. HTMLの生成（ソート済みの sortedFlowNames を使用してループを回す）
     let html = '<div class="accordion flow-accordion" id="flowAccordion">';
 
-    Object.keys(flowGroups).forEach((flowName, flowIndex) => {
+    sortedFlowNames.forEach((flowName, flowIndex) => {
         const subflows = flowGroups[flowName];
         const totalActions = Object.values(subflows).reduce((sum, actions) => sum + actions.length, 0);
 
@@ -586,16 +588,13 @@ function displayGroupView() {
                     <div class="accordion-body">
         `;
 
-        // サブフロー毎にカードを表示
-        Object.keys(subflows).forEach((subflowName, subflowIndex) => {
+        // サブフロー表示部分は既存のロジックを継続
+        Object.keys(subflows).forEach((subflowName) => {
             const actions = subflows[subflowName];
             html += `
                 <div class="card subflow-card">
                     <div class="subflow-header">
-                        <span>
-                            <i class="fas fa-layer-group me-2"></i>
-                            ${escapeHtml(subflowName)}
-                        </span>
+                        <span><i class="fas fa-layer-group me-2"></i>${escapeHtml(subflowName)}</span>
                         <span class="badge bg-secondary action-count-badge">${actions.length} アクション</span>
                     </div>
                     <div class="card-body p-0">
@@ -618,11 +617,7 @@ function displayGroupView() {
                     <tr class="action-row">
                         <td>${actionIndex + 1}</td>
                         <td>${escapeHtml(action['アクション名'] || '-')}</td>
-                        <td>
-                            <span class="badge badge-action-type bg-primary">
-                                ${escapeHtml(action['アクション種類'] || '-')}
-                            </span>
-                        </td>
+                        <td><span class="badge badge-action-type bg-primary">${escapeHtml(action['アクション種類'] || '-')}</span></td>
                         <td><small>${escapeHtml(action['外部アプリケーション名'] || '-')}</small></td>
                         <td><small>${escapeHtml(action['変数名'] || '-')}</small></td>
                         <td>
@@ -634,26 +629,14 @@ function displayGroupView() {
                 `;
             });
 
-            html += `
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            `;
+            html += `</tbody></table></div></div>`;
         });
 
-        html += `
-                    </div>
-                </div>
-            </div>
-        `;
+        html += `</div></div></div>`;
     });
 
     html += '</div>';
-
     document.getElementById('groupViewArea').innerHTML = html;
-
-    console.log('=== displayGroupView completed ===');
 }
 
 function displayPagination() {
@@ -1238,3 +1221,250 @@ async function copyUserGuideToClipboard() {
     }
 }
 
+/**
+ * ファイル選択時の表示更新 (追加分)
+ */
+/**
+ * ファイル選択時の表示更新（イベントからも直接呼び出しからも対応）
+ */
+function handleFileSelect(e) {
+    // 1. 引数がイベント(e)ならファイルを取得、そうでなければ引数そのものがファイル
+    const file = (e && e.target && e.target.files) ? e.target.files[0] : e;
+    
+    if (!file) return;
+
+    console.log("handleFileSelect processing:", file.name);
+
+    // 2. ZIPファイルチェック
+    if (!file.name.toLowerCase().endsWith('.zip')) {
+        alert('ZIPファイルを選択してください。');
+        clearFile();
+        return;
+    }
+
+    // 3. グローバル変数に保持
+    selectedZipFile = file;
+
+    // 4. ボタンの下の青枠エリア（selectedFileNameContainer）に名前を表示
+    const container = document.getElementById('selectedFileNameContainer');
+    const nameSpan = document.getElementById('targetFileName');
+    
+    if (container && nameSpan) {
+        nameSpan.textContent = file.name;
+        container.style.display = 'block'; 
+    }
+    
+    // 5. 解析開始ボタンを有効化
+    const analyzeButton = document.getElementById('analyzeButton');
+    if (analyzeButton) {
+        analyzeButton.disabled = false; 
+    }
+
+    console.log('File selection UI updated and Analyze button enabled');
+}
+
+/**
+ * ファイル解除時の表示リセット (追加分)
+ */
+function clearFile(event) {
+    if (event && event.stopPropagation) event.stopPropagation(); 
+    
+    selectedZipFile = null;
+    const fileInput = document.getElementById('fileInput');
+    if (fileInput) fileInput.value = '';
+    
+    const container = document.getElementById('selectedFileNameContainer');
+    if (container) container.style.display = 'none'; 
+    
+    const analyzeButton = document.getElementById('analyzeButton');
+    if (analyzeButton) analyzeButton.disabled = true; 
+}
+
+//function downloadAsCSV(aiResponseText) {
+    //const rows = [
+        //["作業ステップ", "手順詳細", "仕様アプリシステム", "インプット", "アウトプット"]
+    //];
+
+    //if (!aiResponseText || aiResponseText.includes("AI生成」ボタンをクリック") || aiResponseText.trim().length < 10) {
+        //alert("先にAI生成を完了させてください。内容が空の状態では出力できません。");
+        //return;
+    //}
+
+    //const lines = aiResponseText.split('\n');
+    //let stepData = { name: "", detail: "", system: "", input: "", output: "" };
+
+    //const pushCurrentStep = () => {
+        //if (stepData.name) {
+            //rows.push([
+                //stepData.name,
+                //stepData.detail || "なし",
+                //stepData.system || "なし",
+                //stepData.input  || "なし",
+                //stepData.output || "なし"
+            //]);
+        //}
+    //};
+
+    //lines.forEach(line => {
+        //const trimmed = line.trim();
+        //if (!trimmed) return;
+
+      
+        //const stepMatch = trimmed.match(/^(?:###\s*|\d+\.\s*|\*\*\d+\.\s*)(.+)/);
+        //if (stepMatch) {
+            //pushCurrentStep();
+            // ステップ名から余計な記号(**や[])を削除
+            //const cleanName = stepMatch[1].replace(/[\*\[\]]/g, '').trim();
+            //stepData = { name: cleanName, detail: "", system: "", input: "", output: "" };
+            //return;
+        //}
+
+        // 2. 各項目の検出 (ラベルが含まれているかチェック)
+        // AIが古いラベル「具体的な操作」等で出力しても、自動で新しい列にマッピングします
+        //if (trimmed.match(/手順詳細|具体的な操作/)) {
+            //stepData.detail = trimmed.split(/[:：]/)[1]?.trim() || "";
+        //} else if (trimmed.match(/仕様アプリシステム|使用システム|サイト名|外部アプリ/)) {
+            //stepData.system = trimmed.split(/[:：]/)[1]?.trim() || "";
+        //} else if (trimmed.match(/インプット|使用データ|参照データ/)) {
+            //stepData.input = trimmed.split(/[:：]/)[1]?.trim() || "";
+        //} else if (trimmed.match(/アウトプット|データ連携|保存先/)) {
+            //stepData.output = trimmed.split(/[:：]/)[1]?.trim() || "";
+        //}
+    //});
+
+    //pushCurrentStep(); // 最後のステップを追加
+
+    // データがヘッダーしかない場合は警告
+    //if (rows.length <= 1) {
+        //alert("解析可能なデータが見つかりませんでした。AI生成を再度行い、フォーマットを確認してください。");
+        //return;
+    //}
+
+    // CSV文字列作成
+    //const csvContent = rows.map(r => 
+        //r.map(field => `"${String(field).replace(/"/g, '""')}"`).join(",")
+    //).join("\n");
+
+    //const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
+    //const blob = new Blob([bom, csvContent], { type: "text/csv;charset=utf-8;" });
+    //const link = document.createElement("a");
+    //link.href = URL.createObjectURL(blob);
+    //link.download = `業務要件定義書_${new Date().getTime()}.csv`;
+    //link.click();
+//}
+//0309追加開く
+/**
+ * AIの回答をExcelに変換（コロン分割の不具合修正・パス情報保持版）
+ */
+function downloadAsExcel(aiResponseText) {
+    if (typeof XLSX === 'undefined') {
+        alert("Excelライブラリが読み込まれていません。");
+        return;
+    }
+    //Excel出力リスト
+    const header = ["No","業務観点", "作業ステップ", "手順詳細", "仕様アプリシステム", "インプット", "アウトプット","フロー名"];
+    const rows = [];
+
+    if (!aiResponseText || aiResponseText.trim().length < 10) {
+        alert("データが空か、解析可能な形式ではありません。");
+        return;
+    }
+
+    const lines = aiResponseText.split('\n');
+    let stepData = { name: "", detail: "", system: "", input: "", output: "" , flowname: ""};
+    let noCounter = 1;
+
+    // 項目を抽出するための補助関数（最初のコロン以降をすべて取得）
+    const extractContent = (line) => {
+        const colonIndex = line.indexOf(':') !== -1 ? line.indexOf(':') : line.indexOf('：');
+        if (colonIndex === -1) return "";
+        return line.substring(colonIndex + 1).trim();
+    };
+
+    const pushCurrentStep = () => {
+        if (stepData.name && !stepData.name.includes("一連の流れ")) {
+            if (stepData.name.includes("補足")) {
+                let supplementaryDetail = stepData.detail || "";
+                if (stepData.input && stepData.input !== "なし") supplementaryDetail += "\n" + stepData.input;
+                rows.push([noCounter++, "補足", supplementaryDetail.trim(), "なし", "なし", "なし"]);
+            } else {
+                rows.push([
+                    noCounter++, 
+                    stepData.name,
+                    stepData.detail || "なし",
+                    stepData.system || "なし",
+                    stepData.input || "なし",
+                    stepData.output || "なし",
+                    stepData.flowname || "なし"
+                ]);
+            }
+        }
+    };
+
+    lines.forEach(line => {
+        const trimmed = line.trim();
+        if (!trimmed) return;
+
+        // ステップ名/セクションタイトルの検出
+        const stepMatch = trimmed.match(/^(?:###\s*|\d+\.\s*|\*\*\d+\.\s*|#\s*)(.+)/);
+        if (stepMatch) {
+            pushCurrentStep();
+            const cleanName = stepMatch[1].replace(/[\*\[\]【】]/g, '').trim();
+            stepData = { name: cleanName, detail: "", system: "", input: "", output: "" };
+            return;
+        }
+
+        // データのマッピング（extractContent関数を使用してコロンが複数あっても対応）
+        if (trimmed.match(/手順詳細|具体的な操作/)) {
+            stepData.detail = extractContent(trimmed);
+        } else if (trimmed.match(/仕様アプリシステム|使用システム/)) {
+            stepData.system = extractContent(trimmed);
+        } else if (trimmed.match(/インプット|使用データ/)) {
+            stepData.input = extractContent(trimmed);
+        } else if (trimmed.match(/アウトプット|実行結果/)) {
+            stepData.output = extractContent(trimmed);
+        } else if (trimmed.match(/フロー名/)) {
+            stepData.flowname = extractContent(trimmed);
+        } else if (trimmed.startsWith('- ') && stepData.name.includes("補足")) {
+            stepData.detail = (stepData.detail ? stepData.detail + "\n" : "") + trimmed;
+        }
+    });
+
+    pushCurrentStep();
+
+    // --- 以降、Excel生成とスタイル設定 ---
+    const wsData = [header, ...rows];
+    const worksheet = XLSX.utils.aoa_to_sheet(wsData);
+    const range = XLSX.utils.decode_range(worksheet['!ref']);
+
+    for (let R = range.s.r; R <= range.e.r; ++R) {
+        for (let C = range.s.c; C <= range.e.c; ++C) {
+            const cell_ref = XLSX.utils.encode_cell({ c: C, r: R });
+            if (!worksheet[cell_ref]) continue;
+
+            worksheet[cell_ref].s = {
+                border: {
+                    top: { style: "thin" }, bottom: { style: "thin" },
+                    left: { style: "thin" }, right: { style: "thin" }
+                },
+                alignment: { vertical: "top", horizontal: "left", wrapText: true }
+            };
+
+            if (R === 0) {
+                worksheet[cell_ref].s.fill = { fgColor: { rgb: "FFFF00" } };
+                worksheet[cell_ref].s.font = { sz: 16, bold: true };
+                worksheet[cell_ref].s.alignment.horizontal = "center";
+            }
+            if (C === 0 && R > 0) {
+                worksheet[cell_ref].s.alignment.horizontal = "center";
+            }
+        }
+    }
+
+    worksheet['!cols'] = [{ wch: 6 }, { wch: 30 }, { wch: 30 }, { wch: 65 }, { wch: 25 }, { wch: 35 }, { wch: 35 },{ wch: 40 }];
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "業務要件定義");
+    XLSX.writeFile(workbook, `業務要件定義書_${new Date().getTime()}.xlsx`);
+}
+//0309追加閉じ

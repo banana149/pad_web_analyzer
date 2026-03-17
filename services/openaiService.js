@@ -30,55 +30,52 @@ class OpenAIService {
   /**
    * アクションデータから要件定義書を生成
    */
-  async generateRequirementsDocument(actions, solutionName) {
+  async generateRequirementsDocument(actions, solutionName, excelData = "") { // ← ここを修正
     try {
       // アクションデータをプロンプト用に整理
       const actionSummary = this._createActionSummary(actions);
-
+      console.log('actionSummary',actionSummary);
+      console.log('solutionName',solutionName);
+      console.log('excelData',excelData);
       const prompt = `
-以下のPower Automate Desktopソリューション「${solutionName}」のアクション一覧から、要件定義書を作成してください。
+# 命令
+Power Automateソリューション「${solutionName}」を解析し、業務の開始から終了までの一連の流れを、参照Excel（マスターデータ）の情報と紐付けながら、時系列のリスト形式で作成してください。
 
-# アクション一覧
+# 参照Excelデータ（マスター情報）
+${excelData}
+
+# フロー詳細データ
 ${actionSummary}
 
-# 要件定義書の形式
-以下の構成で要件定義書を作成してください：
+---
 
-## 1. システム概要
-- ソリューションの目的と概要
-- 対象業務プロセス
+# 【業務実行フロー：一連の流れ】
+※フロー名やサブフロー名で区切らず、一つの連続した業務プロセスとして、以下の形式でリスト化してください。
+※Excelデータに該当する情報（拠点名、担当者、システムURL、ファイル名など）がある場合は、必ず具体名を補完して記述してください。
+※全ての手順を記載してください
 
-## 2. 機能要件
-- 主要な機能一覧
-- 各機能の詳細説明
+1. **[作業ステップ]**
+   - **業務概要**: （その手順でどういった業務が行われているのかを推測してください。）
+   - **手順詳細**: （その作業が具体的に何をしているのかを詳細に記述）
+   - **仕様アプリシステム**: （Excel、ブラウザ、基幹システム名などを記述。★重要：操作対象がPower AutomateやPower Automate Desktop自体の機能である場合、または外部アプリを使用していない場合は、必ず「なし」とだけ記述してください。）
+   - **インプット**: （このステップで参照しているExcelのシート名・列名や、前工程から引き継いだ変数、インプットしてきたシステム名。なければ「なし」）
+   - **アウトプット**: （このステップで作成したファイル、保存先、または次工程に渡す変数名アウトプットしてきたシステム名。。なければ「なし」）
+   - **フロー名**: （クラウドフローもしくはデスクトップフローの名称だけサブフローは記載しない。「なし」はあり得ないのでフロー名をちゃんと記載してください。）
+2. **[ステップ名]**
+   - ...（続く）
 
-## 3. 非機能要件
-- パフォーマンス要件
-- セキュリティ要件
-- 運用要件
+---
 
-## 4. 外部システム連携
-- 連携するアプリケーション
-- データ連携方式
+## ■ 解析・記述ルール（厳守事項）
+1. **フォーマット厳守**: 各ステップは必ず「番号. **ステップ名**」で始め、その下の項目は「- **項目名**: 内容」の形式を維持してください。
+2. **マスターデータの結合**: フロー内のID等はExcel内の「具体名」に置き換えて記述してください。
+3. **専門用語の翻訳**: 非エンジニアでも分かる業務動作の言葉（例：「Excelを起動する」等）に変換してください。
+4. **情報の網羅**: 「どのシステム」で「何をインプット」して「何が出たか」を各行で完結させて記述してください。
 
-## 5. 前提条件・制約事項
-- システム環境要件
-- 運用上の制約
 
-## 6. RPAの処理手順詳細説明
-- 主要な処理フローの説明
-- 重要なアクションの説明
-- エラーハンドリングの説明
-- 例外処理の説明
-- ログ取得・管理の説明
-- 変数管理の説明
-- データ操作の説明
-- UI操作の説明
-- ファイル操作の説明
-- 外部アプリケーション操作の説明
-- ループ・条件分岐の説明
+日本語で、このリストを読めば「どのマスタを参照して、どの画面に何を入力し、どこへデータが流れるのか」が完璧に理解できるように記述してください。
 
-日本語で、技術者以外にも理解しやすい表現で記述してください。
+
 `;
 
       const response = await this.client.chat.completions.create({
@@ -212,7 +209,22 @@ flowchart TD
     ProcessA --> Merge["処理結合"]
     ProcessB --> Merge
     Merge --> End1(["終了"])
-`;
+
+## 6. RPAの処理手順詳細説明
+  各ステップにおいて、「何を対象に」「どんな操作をしているか」を以下のルールで具体的に記述してください。
+
+  ### A. ファイル操作・Excel操作
+  - **操作対象ファイル**: 使用しているExcelのファイル名やパスを特定して記述してください。
+  - **操作内容**: どのシートのどのセル（または列名）を読み取り・書き込みしているか明示してください。
+
+  ### B. Webブラウザ・サイト操作
+  - **利用サイト**: 操作対象のURLまたはサイト名を記述してください。
+  - **具体的な操作**: 「ログイン」「データ入力」「ボタンクリック」「抽出」など、人間が行う動作として記述してください。
+
+  ### C. 処理フローの詳細
+  - 主要な処理のつながりを、データの流れ（どこから持ってきてどこへ移すか）に注目して説明してください。
+- 条件分岐やループがある場合、その「条件（例：データが空の場合など）」を具体的に記述してください。    
+    `;
 
       // PAとPADで異なる指示を生成
       let specificInstructions = '';
@@ -603,13 +615,13 @@ ${fewShotExamples}
         });
         summaryText += `主要処理: ${Object.entries(subflowActionTypes)
           .sort((a, b) => b[1] - a[1])
-          .slice(0, 5)
+          .slice(0, 100)
           .map(([type, count]) => `${type}(${count})`)
           .join(', ')}\n`;
 
         // 代表的なアクション（最大15件）
         summaryText += `\n処理フロー:\n`;
-        for (const action of subflowActions.slice(0, 15)) {
+        for (const action of subflowActions.slice(0, 100)) {
           const sanitizedActionName = this._sanitizeActionName(action.アクション名);
           summaryText += `  - [${action.アクション種類}] ${sanitizedActionName}`;
           if (action.外部アプリケーション名) {
@@ -649,7 +661,7 @@ ${fewShotExamples}
           const subflowActions = flowActions.filter(a => a.サブフロー名 === subflowName);
 
           // アクション種類を集計（実行順序を保持、最大10件）
-          const actionSequence = subflowActions.slice(0, 10).map(a => ({
+          const actionSequence = subflowActions.slice(0, 100).map(a => ({
             type: a.アクション種類 || '処理',
             name: this._sanitizeActionName(a.アクション名 || ''),
             externalApp: a.外部アプリケーション名 || null
@@ -842,6 +854,46 @@ ${actionSummary}
       };
     }
   }
+
+  // ★ここから追記★
+  /**
+   * AIが生成した手順書テキストをCSV形式に変換する（BOM付き）
+   * 日本のExcelでの文字化けを防止します。
+   */
+  convertToCSV(aiResponseText) {
+    // 1. AIの回答を簡易的にパースして行データを作成
+    const rows = [["項目", "内容"]]; // CSVのヘッダー
+
+    const lines = aiResponseText.split('\n');
+    let currentCategory = "全般";
+
+    lines.forEach(line => {
+      const trimmedLine = line.trim();
+      if (!trimmedLine) return;
+
+      // 「#」「##」「###」で始まる行を項目名（カテゴリ）として扱う
+      if (trimmedLine.startsWith('#')) {
+        currentCategory = trimmedLine.replace(/#/g, '').trim();
+      } else {
+        // 内容を項目に紐づけて追加
+        rows.push([currentCategory, trimmedLine]);
+      }
+    });
+
+    // 2. CSV文字列の生成（カンマ区切り・ダブルクォート囲み）
+    const csvString = rows.map(row => 
+      row.map(cell => `"${cell.replace(/"/g, '""')}"`).join(',')
+    ).join('\r\n');
+
+    // 3. 日本語Excel用：BOM（Byte Order Mark）の付与
+    const bom = Buffer.from([0xEF, 0xBB, 0xBF]);
+    
+    // BOMとCSV文字列を結合したデータを返す
+    return Buffer.concat([bom, Buffer.from(csvString)]);
+  }
+
 }
+
+
 
 module.exports = OpenAIService;

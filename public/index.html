@@ -10,6 +10,10 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <!-- Mermaid.js -->
     <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <!-- 0309追加 -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+    <!-- 0309終了 -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
     <style>
         :root {
             --primary-color: #0078d4;
@@ -205,10 +209,30 @@
                                 ファイルをドラッグ&ドロップ または クリックして選択
                             </p>
                             <input type="file" id="fileInput" accept=".zip" style="display: none;">
-                            <button id="selectFileButton" class="btn btn-primary btn-lg">
+                            <button id="selectFileButton" class="btn btn-primary btn-lg mb-3">
                                 <i class="fas fa-folder-open me-2"></i>
                                 ファイルを選択
                             </button>
+                        
+                            <div id="selectedFileNameContainer" class="mt-2" style="display: none;">
+                                <div class="d-inline-flex align-items-center p-2 border rounded bg-light">
+                                    <i class="fas fa-file-archive text-primary me-2"></i>
+                                    <span id="targetFileName" class="fw-bold text-dark small"></span>
+                                    <i class="fas fa-times-circle ms-2 text-danger" style="cursor:pointer;" onclick="clearFile(event)" title="解除"></i>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card mt-3 border-primary">
+                            <div class="card-body py-2">
+                                <label for="excelFileInput" class="form-label small fw-bold text-primary">
+                                    <i class="fas fa-file-excel me-1"></i> 補足Excelファイル (任意)
+                                </label>
+                                <input type="file" id="excelFileInput" name="excelFile" class="form-control form-control-sm" accept=".xlsx, .xls, .csv">
+                                <div id="excelFileInfo" class="form-text small">Excelを添えると、拠点名や宛先を含めた実務解析が可能になります。</div>
+                            </div>
+                        </div>
+                        <div id="fileInfo" class="mt-4" style="display: none;">
                         </div>
 
                         <div id="fileInfo" class="mt-4" style="display: none;">
@@ -284,8 +308,8 @@
                                 <button class="btn btn-outline-primary btn-sm me-2" onclick="toggleFilter()">
                                     <i class="fas fa-filter me-1"></i>フィルター
                                 </button>
-                                <button class="btn btn-success btn-sm me-2" onclick="downloadCSV()">
-                                    <i class="fas fa-download me-1"></i>CSV出力
+                                <button class="btn btn-success btn-sm me-2" onclick="downloadAsExcel(document.getElementById('requirementsContent').innerText)">
+                                    <i class="fas fa-file-excel me-1"></i>Excel出力
                                 </button>
                                 <button class="btn btn-primary btn-sm" onclick="exportDocument()">
                                     <i class="fas fa-file-export me-1"></i>統合ドキュメント
@@ -374,7 +398,7 @@
                             <div id="aisummaryViewArea" style="display: none;">
                                 <div class="alert alert-info mb-3">
                                     <i class="fas fa-info-circle me-2"></i>
-                                    <strong>AI要約:</strong> OpenAI APIを使用して自動生成された要件定義書とシステムフロー図です
+                                    <strong>AI要約:</strong> OpenAI APIを使用して自動生成されたフロー説明書です。
                                 </div>
 
                                 <!-- 要件定義書セクション -->
@@ -382,7 +406,7 @@
                                     <div class="d-flex justify-content-between align-items-center mb-3">
                                         <h6 class="mb-0">
                                             <i class="fas fa-file-alt me-2"></i>
-                                            要件定義書
+                                            フロー説明書
                                         </h6>
                                         <button id="generateReqBtn" class="btn btn-warning btn-sm" onclick="generateRequirements()">
                                             <i class="fas fa-robot me-1"></i>AI生成
@@ -394,24 +418,6 @@
                                 </div>
 
                                 <!-- システムフロー図セクション -->
-                                <div class="mb-4">
-                                    <div class="d-flex justify-content-between align-items-center mb-3">
-                                        <h6 class="mb-0">
-                                            <i class="fas fa-project-diagram me-2"></i>
-                                            システムフロー図
-                                        </h6>
-                                        <button id="generateFlowchartBtn" class="btn btn-warning btn-sm" onclick="generateFlowchart()">
-                                            <i class="fas fa-robot me-1"></i>フローチャート生成
-                                        </button>
-                                    </div>
-                                    <div class="alert alert-info small mb-3">
-                                        <i class="fas fa-mouse-pointer me-2"></i>
-                                        <strong>操作方法:</strong> フローチャート内のノード（図形）をクリックすると、アクションの詳細情報が表示されます
-                                    </div>
-                                    <div id="flowchartContent" style="min-height: 400px; background: white; padding: 1.5rem; border: 1px solid #dee2e6; border-radius: 8px; overflow-x: auto;">
-                                        <p class="text-muted">「フローチャート生成」ボタンをクリックしてシステムフロー図を生成してください。</p>
-                                    </div>
-                                </div>
                             </div>
 
                             <!-- ユーザー手動実行ガイド表示エリア -->
@@ -466,8 +472,8 @@
                         <ol class="small">
                             <li>Power Automate または PAD ソリューションファイル（ZIP）をアップロード</li>
                             <li>解析開始ボタンをクリック（自動判定）</li>
-                            <li>アクション一覧を確認</li>
-                            <li>必要に応じてCSV出力やAI要件定義生成</li>
+                            <li>「AI要約」タブを選択し、「AI生成」ボタンをクリック</li>
+                            <li>生成された内容を確認し、「CSV出力」ボタンでExcel形式で保存</li>
                         </ol>
                         <div class="alert alert-info mt-3 small">
                             <strong>対応形式:</strong><br>

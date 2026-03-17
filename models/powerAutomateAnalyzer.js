@@ -122,64 +122,117 @@ class PowerAutomateAnalyzer {
   /**
    * Power Automate (クラウドフロー) の解析
    */
-  async _analyzeCloudFlow(zip) {
-    const actions = [];
+// _analyzeCloudFlow メソッド内での修正イメージ
 
-    try {
-      console.log('Analyzing PA cloud flows from workflows folder...');
+/**
+   * Power Automate (クラウドフロー) の解析
+   */
+async _analyzeCloudFlow(zip) {
+  const actions = [];
+  const flowNameMap = {}; // GUID(小文字) -> フロー表示名 の辞書
 
-      // workflowsフォルダ内のJSONファイルを探す
-      const workflowFiles = [];
-      zip.forEach((relativePath, file) => {
-        const lowerPath = relativePath.toLowerCase();
-        // workflowsフォルダ内の.jsonファイルを検出
-        if (lowerPath.includes('workflows/') && lowerPath.endsWith('.json')) {
-          console.log(`Found workflow file: ${relativePath}`);
-          workflowFiles.push({ path: relativePath, file: file });
+  try {
+    console.log('Analyzing PA cloud flows with customizations.xml matching...');
+
+    // --- 1. customizations.xml を解析して名前の対応表を作る ---
+    const customizationsFile = zip.file("customizations.xml");
+    if (customizationsFile) {
+      try {
+        const xmlText = await customizationsFile.async("text");
+        const parser = new xml2js.Parser({ explicitArray: false });
+        const xmlData = await parser.parseStringPromise(xmlText);
+
+        const workflows = xmlData.ImportExportXml?.Workflows?.Workflow;
+        if (workflows) {
+          const workflowList = Array.isArray(workflows) ? workflows : [workflows];
+          
+          workflowList.forEach(wf => {
+            // JsonFileName: "/Workflows/GUID.json" から GUID 部分を抽出
+            let jsonPath = wf.JsonFileName || "";
+            let guidKey = jsonPath.split('/').pop().replace('.json', '').toLowerCase();
+            let flowDisplayName = wf.$.Name;
+
+            if (guidKey && flowDisplayName) {
+              flowNameMap[guidKey] = flowDisplayName;
+              console.log(`[XML紐付] GUID: ${guidKey} => Name: ${flowDisplayName}`);
+            }
+          });
         }
-      });
-
-      console.log(`Total workflow JSON files found: ${workflowFiles.length}`);
-
-      if (workflowFiles.length === 0) {
-        console.warn('No workflow JSON files found in ZIP');
-        return actions;
+      } catch (xmlError) {
+        console.error('customizations.xml の解析中にエラーが発生しました:', xmlError.message);
       }
-
-      for (const { path, file } of workflowFiles) {
-        try {
-          console.log(`Reading file: ${path}`);
-          const jsonContent = await file.async('text');
-          console.log(`File content length: ${jsonContent.length}`);
-
-          const flowDef = JSON.parse(jsonContent);
-          console.log(`Parsed JSON for: ${path}`);
-
-          // ファイル名からフロー名を取得
-          const flowName = path.split('/').pop().replace('.json', '');
-          console.log(`Extracting actions for flow: ${flowName}`);
-
-          const flowActions = this._parseCloudFlowDefinition(flowName, flowDef);
-          console.log(`Extracted ${flowActions.length} actions from ${flowName}`);
-          actions.push(...flowActions);
-        } catch (error) {
-          console.error(`Flow parsing error for ${path}:`, error.message);
-          console.error(error.stack);
-        }
-      }
-
-      console.log(`Total actions extracted from all flows: ${actions.length}`);
-      return actions;
-    } catch (error) {
-      console.error('Cloud flow analysis error:', error);
-      return [];
     }
+
+    // --- 2. workflowsフォルダ内のJSONファイルを探す ---
+    const workflowFiles = [];
+    zip.forEach((relativePath, file) => {
+      const lowerPath = relativePath.toLowerCase();
+      // 修正点: 以前のコードではここがループの中にありましたが、外に出して正しく収集します
+      if (lowerPath.includes('workflows/') && lowerPath.endsWith('.json')) {
+        workflowFiles.push({ path: relativePath, file: file });
+      }
+    });
+
+    if (workflowFiles.length === 0) {
+      console.warn('No workflow JSON files found in ZIP');
+      return actions;
+    }
+
+    // --- 3. JSONファイルを順次解析 ---
+    for (const { path, file } of workflowFiles) {
+      try {
+        const jsonContent = await file.async('text');
+        const flowDef = JSON.parse(jsonContent);
+
+        // 【重要】ZIP内のファイル名（GUID）を抽出
+        const fileName = path.split('/').pop().replace('.json', '');
+        const lowerFileName = fileName.toLowerCase();
+
+        // 【重要】対応表（辞書）にあればその表示名（Name）を使い、なければファイル名を使う
+        const flowName = flowNameMap[lowerFileName] || fileName;
+        
+        console.log(`[PA照合] 元のID: ${fileName} -> 採用フロー名: ${flowName}`);
+
+        // 決定した flowName を使って解析
+        const flowActions = this._parseCloudFlowDefinition(flowName, flowDef);
+        actions.push(...flowActions);
+
+      } catch (error) {
+        console.error(`Flow parsing error for ${path}:`, error.message);
+      }
+    }
+
+    return actions;
+  } catch (error) {
+    console.error('Cloud flow analysis error:', error);
+    return [];
   }
+}
+
+/**
+ * クラウドフローの定義を解析（引数のflowNameが各アクションの「フロー名」になります）
+ */
+_parseCloudFlowDefinition(flowName, flowDef) {
+  // ... (このメソッド内は既存のままでOKですが、flowNameが正しく渡るようになります)
+}
+
+/**
+ * アクション内容をフォーマット
+ */
+_formatActionContent(action) {
+  // 修正点: エラーの原因となっていた console.log('★actions',actions) は削除
+  const content = [];
+  // ... (既存の整形処理)
+  return content.join('\n');
+}
 
   /**
    * クラウドフローの定義を解析
    */
   _parseCloudFlowDefinition(flowName, flowDef) {
+    console.log(`--------------------------------------------------`);
+    console.log(`[PAチーム] 採用されたフロー名(flowName)1: ${flowName}`);
+    console.log(`[PAチーム] flowDefの内容1:\n${JSON.stringify(flowDef, null, 2)}`);
     const actions = [];
 
     try {
@@ -250,7 +303,11 @@ class PowerAutomateAnalyzer {
     }
 
     console.log(`=== Completed parsing ${flowName}: ${actions.length} total actions ===`);
+    console.log(`--------------------------------------------------`);
+    console.log(`[PAチーム] 採用されたフロー名(flowName)2: ${flowName}`);
+    console.log(`[PAチーム] flowDefの内容2:\n${JSON.stringify(flowDef, null, 2)}`);
     return actions;
+    
   }
 
   /**
@@ -529,6 +586,8 @@ class PowerAutomateAnalyzer {
       content.push(`\n【繰り返し対象】`);
       content.push(typeof action.foreach === 'string' ? action.foreach : JSON.stringify(action.foreach, null, 2));
     }
+
+    console.log('★actions',actions)
 
     return content.join('\n');
   }

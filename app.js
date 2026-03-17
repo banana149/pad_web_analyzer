@@ -9,6 +9,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs-extra');
 const { v4: uuidv4 } = require('uuid');
+const XLSX = require('xlsx');
 require('dotenv').config();
 
 const PADActionExtractor = require('./models/padExtractor');
@@ -40,10 +41,15 @@ const upload = multer({
     fileSize: 50 * 1024 * 1024 // 50MB
   },
   fileFilter: (req, file, cb) => {
-    if (file.mimetype === 'application/zip' || file.originalname.endsWith('.zip')) {
+
+    const ext = path.extname(file.originalname).toLowerCase();
+    const allowedExtensions = ['.zip', '.xlsx', '.xls'];
+    
+    if (allowedExtensions.includes(ext)) {
       cb(null, true);
     } else {
-      cb(new Error('ZIPファイルのみ許可されています'), false);
+      // エラーメッセージもExcelを含めたものに更新
+      cb(new Error('ZIPファイルまたはExcelファイルのみ許可されています'), false);
     }
   }
 });
@@ -73,49 +79,69 @@ if (process.env.FLOWCHART_ENABLED === 'true') {
 // ルート定義
 
 // メインページ
-app.get('/', (req, res) => {
-  const flowchartAvailable = flowchartService ? flowchartService.isAvailable() : false;
-
-  res.json({
-    message: 'Power Automate Desktop アクション解析ツール (JavaScript版)',
-    features: {
-      openai_enabled: !!openaiService,
-      flowchart_enabled: flowchartAvailable
-    }
-  });
-});
-
-// ファイルアップロード・解析
-app.post('/upload', upload.single('file'), async (req, res) => {
+// upload.fields を使い、両方のファイルを受け取れるように定義する
+app.post('/upload', upload.fields([
+  { name: 'file', maxCount: 1 },
+  { name: 'excelFile', maxCount: 1 }
+]), async (req, res) => {
   console.log('=== Upload request received ===');
-  console.log('File:', req.file ? req.file.originalname : 'No file');
+
+  
+
+  // ★ここを追加：受信したファイルの情報をすべて表示する
+  console.log('Received files:', Object.keys(req.files || {})); 
+  if (req.files['excelFile']) {
+      console.log('Excel file found in request:', req.files['excelFile'][0].originalname);
+  } else {
+      console.log('Excel file NOT found in request.');
+  }
 
   try {
-    if (!req.file) {
+    // req.files からそれぞれのファイルを取得
+    const mainFile = req.files['file'] ? req.files['file'][0] : null;
+    const excelFile = req.files['excelFile'] ? req.files['excelFile'][0] : null;
+
+    if (!mainFile) {
       return res.status(400).json({ error: 'ファイルが選択されていません' });
     }
 
     console.log('Starting extraction...');
-    // 統合解析器を初期化（PAとPADを自動判定）
     const analyzer = new PowerAutomateAnalyzer();
-
-    // アップロードされたファイルから解析
-    const result = await analyzer.analyzeFromZipFile(req.file.path);
+    const result = await analyzer.analyzeFromZipFile(mainFile.path);
     const actions = result.actions;
     const solutionType = result.solutionType;
 
-    console.log(`Solution type: ${solutionType}`);
+    let excelContent = "";
+    // excelFile が存在する場合の処理
+    if (excelFile) {
+      console.log('Excel file detected, parsing all sheets...');
+      const workbook = XLSX.readFile(excelFile.path);
+      let combinedText = "";
 
-    if (!actions || actions.length === 0) {
-      return res.status(400).json({
-        error: 'アクションが見つかりませんでした。正しいPower Automateソリューションファイルか確認してください'
+      // 全シート名をループで処理
+      workbook.SheetNames.forEach((sheetName) => {
+          const worksheet = workbook.Sheets[sheetName];
+          // AIがシートの区切りを理解できるように見出しを付ける
+          combinedText += `\n--- Sheet: ${sheetName} ---\n`;
+          // シート内容をCSV形式でテキスト化して結合
+          combinedText += XLSX.utils.sheet_to_csv(worksheet);
+          combinedText += "\n"; 
       });
+
+      excelContent = combinedText;
+      
+      // 処理が終わった一時ファイルを削除
+      await fs.remove(excelFile.path);
+      console.log(`Excel parsing completed. Total sheets parsed: ${workbook.SheetNames.length}`);
     }
 
-    // セッションIDの生成
-    const sessionId = `session_${new Date().toISOString().replace(/[:.]/g, '-')}`;
+    // --- 以降のロジック（sessionId生成やsummary計算）はそのままでOK ---
+    console.log(`Solution type: ${solutionType}`);
+    if (!actions || actions.length === 0) {
+      return res.status(400).json({ error: 'アクションが見つかりませんでした' });
+    }
 
-    // 統計情報の計算
+    const sessionId = `session_${new Date().toISOString().replace(/[:.]/g, '-')}`;
     const paActions = actions.filter(a => a['フロータイプ'] === 'PA');
     const padActions = actions.filter(a => a['フロータイプ'] === 'PAD');
 
@@ -128,38 +154,33 @@ app.post('/upload', upload.single('file'), async (req, res) => {
       external_apps: [...new Set(actions.map(action => action.外部アプリケーション名).filter(Boolean))].length
     };
 
-    // 解析結果を一時保存
+    
+
     const sessionData = {
       session_id: sessionId,
-      filename: req.file.originalname,
-      solution_type: solutionType, // PAまたはPAD
+      filename: mainFile.originalname,
+      solution_type: solutionType,
       actions,
+      excel_data: excelContent,
       timestamp: new Date().toISOString(),
       summary
     };
 
     const sessionFilePath = path.join(uploadDir, `${sessionId}.json`);
     await fs.writeJson(sessionFilePath, sessionData, { spaces: 2 });
-
-    // アップロードファイルを削除
-    await fs.remove(req.file.path);
-
-    console.log(`Extraction completed: ${actions.length} actions`);
-    console.log('=== Upload request completed ===');
+    await fs.remove(mainFile.path);
 
     res.json({
       success: true,
       session_id: sessionId,
       solution_type: solutionType,
       summary,
-      actions: actions // 全件を返す
+      actions: actions
     });
 
   } catch (error) {
     console.error('Upload error:', error);
-    res.status(500).json({
-      error: `ファイル解析中にエラーが発生しました: ${error.message}`
-    });
+    res.status(500).json({ error: `解析エラー: ${error.message}` });
   }
 });
 
@@ -230,10 +251,17 @@ app.post('/api/requirements/:sessionId', async (req, res) => {
     const sessionData = await fs.readJson(sessionFilePath);
     const solutionName = req.body.solution_name || sessionData.filename || 'Power Automate Desktop ソリューション';
 
+    
+
     const requirements = await openaiService.generateRequirementsDocument(
       sessionData.actions,
-      solutionName
+      solutionName,
+      sessionData.excel_data || ""
     );
+    console.log('--- OpenAI 要件定義生成デバッグ ---');
+    console.log('sessionData.actions',sessionData.actions);
+    console.log('solutionName',solutionName);
+    console.log('essionData.excel_data',sessionData.excel_data || "",);
 
     // 生成結果をセッションデータに保存
     sessionData.requirements = requirements;
@@ -542,9 +570,9 @@ app.use((req, res) => {
 });
 
 // サーバー起動
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`Power Automate Desktop アクション解析ツール (JavaScript版)`);
-  console.log(`サーバーが起動しました: http://localhost:${PORT}`);
+  console.log(`Server is running on port ${PORT}`);
   console.log(`OpenAI連携: ${openaiService ? '有効' : '無効'}`);
   console.log(`フローチャート連携: ${flowchartService ? '有効' : '無効'}`);
 });

@@ -62,7 +62,7 @@ class FlowchartAPIService {
             id: currentNodeId,
             type: nodeType,
             label: action.アクション名,
-            flow: flowName,
+            flow: flowDisplayName,
             subflow: subflowName,
             position: { x: positionX, y: positionY },
             style: { backgroundColor: this._getNodeColor(nodeType) },
